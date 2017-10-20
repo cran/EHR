@@ -1,0 +1,15 @@
+c26dbe0fa29d2b36048b40ac48d47f22 *DESCRIPTION
+8b896515ba8b0f169276431d409a3c0f *NAMESPACE
+83a453ca53db3056fbdafe0cfc8849b2 *R/Logistf.R
+8f84121ea791f98a72d12ec079c1bf5d *R/analysisPheWAS.R
+0cc44c3c902990e552987efd64543506 *R/zeroOneTable.R
+8c79cc626891254ed582e614367291e2 *data/dataPheWAS.RData
+b5f9fab6411acf2fd534a98506c9b90c *data/dataPheWASsmall.RData
+9afc130030b92cd6d8382a8cd60b7d19 *man/EHR-package.Rd
+196bb69dc0775666cf5205aedec4921e *man/Logistf.Rd
+127607f5b28979109fc721c5750805b7 *man/analysisPheWAS.Rd
+0e09ff770ea01d3ba1024841a9506dd9 *man/dd.Rd
+32379e4b15e029a46574ef636f8ab3cd *man/dd.baseline.Rd
+742d0af0f5fde865559f169b1ad7764a *man/dd.baseline.small.Rd
+6c74aa58db5145c3febc4f9f785c5e09 *man/dd.small.Rd
+95f3c9ffc9dd2761bd27e61b6d8b2dab *man/zeroOneTable.Rd
