@@ -6,8 +6,8 @@
 p-value than \code{logistf} function in the R package \sQuote{logistf}}
 \usage{
 Logistf(
-  formula,
-  data,
+  formula = attr(data, "formula"),
+  data = sys.parent(),
   pl = TRUE,
   alpha = 0.05,
   control,
@@ -16,8 +16,7 @@ Logistf(
   init,
   weights,
   plconf = NULL,
-  flic = FALSE,
-  model = TRUE,
+  dataout = TRUE,
   ...
 )
 }
@@ -65,10 +64,7 @@ multiplied by the corresponding element of \code{weights}.}
 profile likelihood confidence intervals should be computed. Default is to
 compute for all variables.}
 
-\item{flic}{If TRUE, intercept is altered such that the predicted
-probabilities become unbiased while keeping all other coefficients constant}
-
-\item{model}{If TRUE the corresponding components of the fit are returned.}
+\item{dataout}{If TRUE, copies the \code{data} set to the output object.}
 
 \item{\dots}{Further arguments to be passed to logistf.}
 }

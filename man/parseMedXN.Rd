@@ -38,6 +38,8 @@ a single output file. The beginning of some lines of the output file can indicat
 when output for a new observation (or new clinical note) begins. The user should specify
 the argument \code{begText} to be a regular expression used to identify the lines where output
 for a new clinical note begins.
+
+See EHR Vignette for Extract-Med and Pro-Med-NLP as well as Dose Building Using Example Vanderbilt EHR Data for details.
 }
 \examples{
 mxn_output <- system.file("examples", "lam_medxn.csv", package = "EHR")

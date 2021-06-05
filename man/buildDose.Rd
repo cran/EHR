@@ -41,7 +41,7 @@ algorithm taking a long time to finish. Alternatively set the\cr
 }
 \value{
 A data.frame object that contains columns for filename (of the clinical note, inherited from the
-parse output object \code{dat}), drugname, strength, dose, route, freq, duration, and drugname_start
+parse output object \code{dat}), drugname, strength, dose, route, freq, duration, and drugname_start.
 }
 \description{
 Output from parse process is taken and converted into a wide format, grouping drug entity
@@ -83,9 +83,8 @@ less likely.
  threshold puts an upper bound on the number of entity pairings to prevent the function from stalling in such cases.
 }
 If none of the optional arguments are specified, then the \code{buildDose} process uses the default option values specified in the EHR
-package documentation.
-
-For additional details, see McNeer, et al. 2020.
+package documentation. 
+See EHR Vignette for Extract-Med and Pro-Med-NLP as well as Dose Building Using Example Vanderbilt EHR Data for details. For additional details, see McNeer, et al. 2020.
 }
 \examples{
 data(lam_mxr_parsed)

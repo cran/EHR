@@ -29,4 +29,6 @@ If multiple expressions are extracted for the same entity, they will be separate
 backticks.
 
 MedEx output files anchor extractions to a specific drug name extraction.
+
+See EHR Vignette for Extract-Med and Pro-Med-NLP as well as Dose Building Using Example Vanderbilt EHR Data for details.
 }
