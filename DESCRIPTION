@@ -1,6 +1,6 @@
 Package: EHR
-Version: 0.4-0
-Date: 2021-06-04
+Version: 0.4-1
+Date: 2021-06-07
 Title: Electronic Health Record (EHR) Data Processing and Analysis Tool
 Maintainer: Leena Choi <naturechoi@gmail.com>
 Authors@R: 
@@ -39,7 +39,7 @@ Suggests: glmnet, logistf, medExtractR, knitr, rmarkdown, ggplot2,
 NeedsCompilation: no
 RoxygenNote: 7.1.1
 VignetteBuilder: knitr
-Packaged: 2021-06-05 20:16:01 UTC; leenachoi
+Packaged: 2021-06-08 18:02:00 UTC; leenachoi
 Author: Leena Choi [aut, cre] (<https://orcid.org/0000-0002-2544-7090>),
   Cole Beck [aut] (<https://orcid.org/0000-0002-6849-6255>),
   Hannah Weeks [aut] (<https://orcid.org/0000-0002-0262-6790>),
@@ -47,4 +47,4 @@ Author: Leena Choi [aut, cre] (<https://orcid.org/0000-0002-2544-7090>),
   Nathan James [aut] (<https://orcid.org/0000-0001-7079-9151>),
   Michael Williams [aut]
 Repository: CRAN
-Date/Publication: 2021-06-05 21:40:02 UTC
+Date/Publication: 2021-06-09 07:20:08 UTC

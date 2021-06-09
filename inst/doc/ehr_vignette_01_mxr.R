@@ -132,7 +132,7 @@ tune_ann <- do.call(rbind, lapply(ann_filenames, function(fn){
 
 head(tune_ann)
 
-## ----run_mxr, cache = TRUE----------------------------------------------------
+## ----run_mxr------------------------------------------------------------------
 wind_len <- seq(30, 120, 30)
 max_edit <- seq(0, 2, 1)
 tune_pick <- expand.grid("window_length" = wind_len, 
@@ -247,7 +247,7 @@ bmd("tacpid1_2008-06-26_note1_1.txt")
 (tac_metadata <- bmd(tac_part_i_out[['filename']]))
 
 ## -----------------------------------------------------------------------------
-data(tac_lab)
+data(tac_lab, package = 'EHR')
 tac_lab
 
 ## -----------------------------------------------------------------------------
@@ -259,8 +259,8 @@ tac_lab
 ## ---- eval = FALSE, warning = FALSE-------------------------------------------
 #  collapseDose(x, noteMetaData, naFreq = 'most', ...)
 
-## ---- warning = FALSE---------------------------------------------------------
-tac_part_ii <- collapseDose(tac_part_i_out_lastdose, tac_metadata, naFreq = 'most')
+## -----------------------------------------------------------------------------
+suppressWarnings(tac_part_ii <- collapseDose(tac_part_i_out_lastdose, tac_metadata, naFreq = 'most'))
 
 ## -----------------------------------------------------------------------------
 tac_part_ii$note
@@ -268,9 +268,9 @@ tac_part_ii$note
 ## -----------------------------------------------------------------------------
 tac_part_ii$date
 
-## ---- warning = FALSE---------------------------------------------------------
-data(lam_metadata)
-lam_part_ii <- collapseDose(lam_part_i_out, lam_metadata, naFreq = 'most', 'xr|er')
+## -----------------------------------------------------------------------------
+data(lam_metadata, package = 'EHR')
+suppressWarnings(lam_part_ii <- collapseDose(lam_part_i_out, lam_metadata, naFreq = 'most', 'xr|er'))
 
 ## -----------------------------------------------------------------------------
 lam_part_ii$note

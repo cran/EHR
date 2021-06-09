@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Dose Building Using Example Vanderbilt EHR Data</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<link href="data:text/css;charset=utf-8,body%20%7B%0Abackground%2Dcolor%3A%20%23fff%3B%0Amargin%3A%201em%20auto%3B%0Amax%2Dwidth%3A%20700px%3B%0Aoverflow%3A%20visible%3B%0Apadding%2Dleft%3A%202em%3B%0Apadding%2Dright%3A%202em%3B%0Afont%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0Afont%2Dsize%3A%2014px%3B%0Aline%2Dheight%3A%201%2E35%3B%0A%7D%0A%23TOC%20%7B%0Aclear%3A%20both%3B%0Amargin%3A%200%200%2010px%2010px%3B%0Apadding%3A%204px%3B%0Awidth%3A%20400px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Aborder%2Dradius%3A%205px%3B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Afont%2Dsize%3A%2013px%3B%0Aline%2Dheight%3A%201%2E3%3B%0A%7D%0A%23TOC%20%2Etoctitle%20%7B%0Afont%2Dweight%3A%20bold%3B%0Afont%2Dsize%3A%2015px%3B%0Amargin%2Dleft%3A%205px%3B%0A%7D%0A%23TOC%20ul%20%7B%0Apadding%2Dleft%3A%2040px%3B%0Amargin%2Dleft%3A%20%2D1%2E5em%3B%0Amargin%2Dtop%3A%205px%3B%0Amargin%2Dbottom%3A%205px%3B%0A%7D%0A%23TOC%20ul%20ul%20%7B%0Amargin%2Dleft%3A%20%2D2em%3B%0A%7D%0A%23TOC%20li%20%7B%0Aline%2Dheight%3A%2016px%3B%0A%7D%0Atable%20%7B%0Amargin%3A%201em%20auto%3B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dcolor%3A%20%23DDDDDD%3B%0Aborder%2Dstyle%3A%20outset%3B%0Aborder%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0Aborder%2Dwidth%3A%202px%3B%0Apadding%3A%205px%3B%0Aborder%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dstyle%3A%20inset%3B%0Aline%2Dheight%3A%2018px%3B%0Apadding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0Aborder%2Dleft%2Dstyle%3A%20none%3B%0Aborder%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Ap%20%7B%0Amargin%3A%200%2E5em%200%3B%0A%7D%0Ablockquote%20%7B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Apadding%3A%200%2E25em%200%2E75em%3B%0A%7D%0Ahr%20%7B%0Aborder%2Dstyle%3A%20solid%3B%0Aborder%3A%20none%3B%0Aborder%2Dtop%3A%201px%20solid%20%23777%3B%0Amargin%3A%2028px%200%3B%0A%7D%0Adl%20%7B%0Amargin%2Dleft%3A%200%3B%0A%7D%0Adl%20dd%20%7B%0Amargin%2Dbottom%3A%2013px%3B%0Amargin%2Dleft%3A%2013px%3B%0A%7D%0Adl%20dt%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Aul%20%7B%0Amargin%2Dtop%3A%200%3B%0A%7D%0Aul%20li%20%7B%0Alist%2Dstyle%3A%20circle%20outside%3B%0A%7D%0Aul%20ul%20%7B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Apre%2C%20code%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0Aborder%2Dradius%3A%203px%3B%0Acolor%3A%20%23333%3B%0Awhite%2Dspace%3A%20pre%2Dwrap%3B%20%0A%7D%0Apre%20%7B%0Aborder%2Dradius%3A%203px%3B%0Amargin%3A%205px%200px%2010px%200px%3B%0Apadding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Acode%20%7B%0Afont%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0Afont%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0Apadding%3A%202px%200px%3B%0A%7D%0Adiv%2Efigure%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0Abackground%2Dcolor%3A%20%23FFFFFF%3B%0Apadding%3A%202px%3B%0Aborder%3A%201px%20solid%20%23DDDDDD%3B%0Aborder%2Dradius%3A%203px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Amargin%3A%200%205px%3B%0A%7D%0Ah1%20%7B%0Amargin%2Dtop%3A%200%3B%0Afont%2Dsize%3A%2035px%3B%0Aline%2Dheight%3A%2040px%3B%0A%7D%0Ah2%20%7B%0Aborder%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Apadding%2Dbottom%3A%202px%3B%0Afont%2Dsize%3A%20145%25%3B%0A%7D%0Ah3%20%7B%0Aborder%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Afont%2Dsize%3A%20120%25%3B%0A%7D%0Ah4%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0Amargin%2Dleft%3A%208px%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Ah5%2C%20h6%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23ccc%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Aa%20%7B%0Acolor%3A%20%230033dd%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0Aa%3Ahover%20%7B%0Acolor%3A%20%236666ff%3B%20%7D%0Aa%3Avisited%20%7B%0Acolor%3A%20%23800080%3B%20%7D%0Aa%3Avisited%3Ahover%20%7B%0Acolor%3A%20%23BB00BB%3B%20%7D%0Aa%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0Aa%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%0A" rel="stylesheet" type="text/css" />
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Dose Building Using Example Vanderbilt EHR Data</h1>
+
+
+
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>We have provided the medExtractR output and gold standards for the tacrolimus and lamotrigine test sets used to develop the dose building algorithm detailed in this paper. This data comes from Vanderbilt's EHR system. In this vignette, we show how to access this data, how to implement the algorithm, and how to compare the algorithm output to the gold standard using the tacrolimus data. More details of the functions used in the algorithm can be found in our EHR vignette for Extract-Med and Pro-Med-NLP.</p>
+<div id="medextractr-output" class="section level2">
+<h2>medExtractR Output</h2>
+<p>Several rows of the medExtractR output for tacrolimus are shown below.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">tac_mxr_fn &lt;-<span class="st"> </span><span class="kw">system.file</span>(<span class="st">&quot;examples&quot;</span>, <span class="st">&quot;tac_mxr_out.csv&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;EHR&quot;</span>)
+tac_mxr &lt;-<span class="st"> </span><span class="kw">read.csv</span>(tac_mxr_fn, <span class="dt">na =</span> <span class="st">''</span>)
+tac_mxr[<span class="kw">c</span>(<span class="dv">135</span><span class="op">:</span><span class="dv">139</span>,<span class="dv">163</span><span class="op">:</span><span class="dv">167</span>,<span class="dv">283</span><span class="op">:</span><span class="dv">289</span>,<span class="dv">343</span><span class="op">:</span><span class="dv">346</span>),]</code></pre></div>
+<pre><code>##                          filename    entity               expr     pos
+## 135 X240866534_2010-01-28_4070129  DrugName         Tacrolimus 839:849
+## 136 X240866534_2010-01-28_4070129  DrugName            Prograf 851:858
+## 137 X240866534_2010-01-28_4070129  Strength               1 mg 860:864
+## 138 X240866534_2010-01-28_4070129   DoseAmt                  4 874:875
+## 139 X240866534_2010-01-28_4070129 Frequency every twelve hours 888:906
+## 163 X240866534_2010-01-28_9659069  DrugName         Tacrolimus 150:160
+## 164 X240866534_2010-01-28_9659069  DrugName            Prograf 162:169
+## 165 X240866534_2010-01-28_9659069  Strength               1 mg 171:175
+## 166 X240866534_2010-01-28_9659069   DoseAmt                  4 185:186
+## 167 X240866534_2010-01-28_9659069 Frequency every twelve hours 199:217
+## 283 X410930205_2006-06-20_3473651  DrugName            Prograf 870:877
+## 284 X410930205_2006-06-20_3473651      Dose                3mg 878:881
+## 285 X410930205_2006-06-20_3473651 Frequency                BID 882:885
+## 286 X410930205_2006-06-20_3473651  DrugName            prograf 943:950
+## 287 X410930205_2006-06-20_3473651  Strength                1mg 951:954
+## 288 X410930205_2006-06-20_3473651   DoseAmt                  3 955:956
+## 289 X410930205_2006-06-20_3473651 Frequency                bid 961:964
+## 343 X410930205_2006-06-20_2809083  DrugName            prograf 560:567
+## 344 X410930205_2006-06-20_2809083  Strength                1mg 568:571
+## 345 X410930205_2006-06-20_2809083   DoseAmt                  3 572:573
+## 346 X410930205_2006-06-20_2809083 Frequency                bid 578:581</code></pre>
+</div>
+<div id="part-i" class="section level2">
+<h2>Part I</h2>
+<p>The first step of Part I of our algorithm is parsing the raw NLP output. This results in a standardized form of the data that includes a row for each drug mention and columns for all entities anchored to that drug mention. Here, we use the <code>parseMedExtractR</code> function since we are using medExtractR output as an example.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">tac_mxr_parsed &lt;-<span class="st"> </span><span class="kw">parseMedExtractR</span>(tac_mxr_fn)</code></pre></div>
+<p>Below are the rows of the parsed output corresponding to the raw NLP output from above.</p>
+<pre><code>##                        filename             drugname       strength
+## 1 X240866534_2010-01-28_4070129 Tacrolimus::839::849               
+## 2 X240866534_2010-01-28_4070129    Prograf::851::858 1 mg::860::864
+## 3 X240866534_2010-01-28_9659069 Tacrolimus::150::160               
+## 4 X240866534_2010-01-28_9659069    Prograf::162::169 1 mg::171::175
+## 5 X410930205_2006-06-20_3473651    Prograf::870::877               
+## 6 X410930205_2006-06-20_3473651    prograf::943::950  1mg::951::954
+## 7 X410930205_2006-06-20_2809083    prograf::560::567  1mg::568::571
+## 
+##               dose route                         freq       dosestr
+##      1                                                             
+##      2 4::874::875       every twelve hours::888::906              
+##      3                                                             
+##      4 4::185::186       every twelve hours::199::217              
+##      5                                  BID::882::885 3mg::878::881
+##      6 3::955::956                      bid::961::964              
+##      7 3::572::573                      bid::578::581              
+## 
+##        dosechange lastdose
+##      1                    
+##      2                    
+##      3                    
+##      4                    
+##      5                    
+##      6                    
+##      7</code></pre>
+<p>Next, the parsed entities are paired using the <code>buildDose</code> function. This results in a dataset with a column for each entity and a row for each pairing.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">tac_mxr_part1_out &lt;-<span class="st"> </span><span class="kw">buildDose</span>(tac_mxr_parsed)</code></pre></div>
+<p>The output is shown below.</p>
+<pre><code>##                          filename   drugname strength dose route
+## 51  X240866534_2010-01-28_4070129 Tacrolimus     &lt;NA&gt; &lt;NA&gt;  &lt;NA&gt;
+## 52  X240866534_2010-01-28_4070129    Prograf     1 mg    4  &lt;NA&gt;
+## 55  X240866534_2010-01-28_9659069 Tacrolimus     &lt;NA&gt; &lt;NA&gt;  &lt;NA&gt;
+## 56  X240866534_2010-01-28_9659069    Prograf     1 mg    4  &lt;NA&gt;
+## 104 X410930205_2006-06-20_2809083    prograf      1mg    3  &lt;NA&gt;
+## 105 X410930205_2006-06-20_3473651    Prograf     &lt;NA&gt; &lt;NA&gt;  &lt;NA&gt;
+## 106 X410930205_2006-06-20_3473651    prograf      1mg    3  &lt;NA&gt;
+##                   freq dosestr dosechange lastdose drugname_start
+## 51                &lt;NA&gt;    &lt;NA&gt;       &lt;NA&gt;     &lt;NA&gt;            839
+## 52  every twelve hours    &lt;NA&gt;       &lt;NA&gt;     &lt;NA&gt;            851
+## 55                &lt;NA&gt;    &lt;NA&gt;       &lt;NA&gt;     &lt;NA&gt;            150
+## 56  every twelve hours    &lt;NA&gt;       &lt;NA&gt;     &lt;NA&gt;            162
+## 104                bid    &lt;NA&gt;       &lt;NA&gt;     &lt;NA&gt;            560
+## 105                BID     3mg       &lt;NA&gt;     &lt;NA&gt;            870
+## 106                bid    &lt;NA&gt;       &lt;NA&gt;     &lt;NA&gt;            943</code></pre>
+<div id="comparing-to-gold-standard" class="section level3">
+<h3>Comparing to Gold Standard</h3>
+<p>We have provided the gold standard that we generated for part 1. Several rows are shown below.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">tac_gs_part1 &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="kw">system.file</span>(<span class="st">&quot;examples&quot;</span>, <span class="st">&quot;tac_gs_part1.csv&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;EHR&quot;</span>),
+                         <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span>, <span class="dt">na =</span> <span class="st">''</span>)</code></pre></div>
+<pre><code>##                          filename   drugname drugname_start strength dose route
+## 51  X240866534_2010-01-28_4070129 Tacrolimus            839     &lt;NA&gt; &lt;NA&gt;    NA
+## 52  X240866534_2010-01-28_4070129    Prograf            851     1 mg    4    NA
+## 53  X240866534_2010-01-28_9659069 Tacrolimus            150     &lt;NA&gt; &lt;NA&gt;    NA
+## 54  X240866534_2010-01-28_9659069    Prograf            162     1 mg    4    NA
+## 104 X410930205_2006-06-20_3473651    Prograf            870     &lt;NA&gt; &lt;NA&gt;    NA
+## 105 X410930205_2006-06-20_3473651    prograf            943      1mg    3    NA
+## 107 X410930205_2006-06-20_2809083    prograf            560      1mg    3    NA
+##                   freq dosestr dosechange
+## 51                &lt;NA&gt;    &lt;NA&gt;       &lt;NA&gt;
+## 52  every twelve hours    &lt;NA&gt;       &lt;NA&gt;
+## 53                &lt;NA&gt;    &lt;NA&gt;       &lt;NA&gt;
+## 54  every twelve hours    &lt;NA&gt;       &lt;NA&gt;
+## 104                BID     3mg       &lt;NA&gt;
+## 105                bid    &lt;NA&gt;       &lt;NA&gt;
+## 107                bid    &lt;NA&gt;       &lt;NA&gt;</code></pre>
+<p>The following code compares the gold standard to the Part I output and provides the recall and precision measures.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">precall &lt;-<span class="st"> </span><span class="cf">function</span>(dat, gs) {
+  tp1 &lt;-<span class="st"> </span><span class="kw">sum</span>(dat <span class="op">%in%</span><span class="st"> </span>gs)
+  fp1 &lt;-<span class="st"> </span><span class="kw">sum</span>(<span class="op">!</span>(dat <span class="op">%in%</span><span class="st"> </span>gs))
+  fn1 &lt;-<span class="st"> </span><span class="kw">sum</span>(<span class="op">!</span>(gs <span class="op">%in%</span><span class="st"> </span>dat))
+  r1 &lt;-<span class="st"> </span><span class="kw">c</span>(tp1, tp1 <span class="op">+</span><span class="st"> </span>fn1)
+  p1 &lt;-<span class="st"> </span><span class="kw">c</span>(tp1, tp1 <span class="op">+</span><span class="st"> </span>fp1)
+  r &lt;-<span class="st"> </span><span class="kw">rbind</span>(r1,p1)
+  <span class="kw">dimnames</span>(r) &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="kw">c</span>(<span class="st">'recall'</span>,<span class="st">'prec'</span>), <span class="kw">c</span>(<span class="st">'num'</span>,<span class="st">'den'</span>))
+  <span class="kw">cbind</span>(r, <span class="dt">prop =</span> <span class="kw">round</span>(r[,<span class="dv">1</span>] <span class="op">/</span><span class="st"> </span>r[,<span class="dv">2</span>], <span class="dv">2</span>))
+}
+
+colsToCompare &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">'filename'</span>,<span class="st">'drugname'</span>,<span class="st">'strength'</span>,<span class="st">'dose'</span>,<span class="st">'route'</span>,<span class="st">'freq'</span>,
+  <span class="st">'dosestr'</span>,<span class="st">'dosechange'</span>,<span class="st">'drugname_start'</span>)
+tac_mxr_part1_out &lt;-<span class="st"> </span>tac_mxr_part1_out[,colsToCompare]
+tac_gs_part1 &lt;-<span class="st"> </span>tac_gs_part1[,colsToCompare]
+
+tacxrrow &lt;-<span class="st"> </span><span class="kw">do.call</span>(paste, <span class="kw">c</span>(tac_mxr_part1_out, <span class="dt">sep =</span> <span class="st">'|'</span>))
+gs.tacxrrow &lt;-<span class="st"> </span><span class="kw">do.call</span>(paste, <span class="kw">c</span>(tac_gs_part1, <span class="dt">sep =</span> <span class="st">'|'</span>))
+
+<span class="kw">precall</span>(tacxrrow, gs.tacxrrow)</code></pre></div>
+<pre><code>##        num den prop
+## recall 285 285    1
+## prec   285 285    1</code></pre>
+</div>
+</div>
+<div id="part-ii" class="section level2">
+<h2>Part II</h2>
+<p>In part II of the algorithm, the final datasets are formed containing dose intake and daily dose, and redundancies are removed at the note and date level for each patient.</p>
+<p>This part of the algorithm requires more detailed meta data associated with each clinical note file. This is shown below using our example tacrolimus data.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">bmd &lt;-<span class="st"> </span><span class="cf">function</span>(x) {
+  fns &lt;-<span class="st"> </span><span class="kw">strsplit</span>(x, <span class="st">'_'</span>)
+  pid &lt;-<span class="st"> </span><span class="kw">sapply</span>(fns, <span class="st">`</span><span class="dt">[</span><span class="st">`</span>, <span class="dv">1</span>)
+  date &lt;-<span class="st"> </span><span class="kw">as.Date</span>(<span class="kw">sapply</span>(fns, <span class="st">`</span><span class="dt">[</span><span class="st">`</span>, <span class="dv">2</span>), <span class="dt">format =</span> <span class="st">'%Y-%m-%d'</span>)
+  note &lt;-<span class="st"> </span><span class="kw">sapply</span>(fns, <span class="st">`</span><span class="dt">[</span><span class="st">`</span>, <span class="dv">3</span>)
+  <span class="kw">data.frame</span>(<span class="dt">filename =</span> x, pid, date, note, <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span>)
+}
+tac_metadata &lt;-<span class="st"> </span><span class="kw">bmd</span>(tac_mxr_part1_out[[<span class="st">'filename'</span>]])</code></pre></div>
+<pre><code>##                          filename        pid       date    note
+## 51  X240866534_2010-01-28_4070129 X240866534 2010-01-28 4070129
+## 55  X240866534_2010-01-28_9659069 X240866534 2010-01-28 9659069
+## 104 X410930205_2006-06-20_2809083 X410930205 2006-06-20 2809083
+## 105 X410930205_2006-06-20_3473651 X410930205 2006-06-20 3473651</code></pre>
+<p>Below, a few rows of the note level and date level collapsing are shown for our example tacrolimus data.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">tac_part2 &lt;-<span class="st"> </span><span class="kw">collapseDose</span>(tac_mxr_part1_out, tac_metadata, <span class="dt">naFreq=</span><span class="st">'most'</span>)</code></pre></div>
+<pre><code>## Warning: unable to calculate mode for route, naRoute set to &quot;orally&quot;</code></pre>
+<p>Note level:</p>
+<pre><code>##                         filename drugname strength dose  route freq dosestr
+## 40 X240866534_2010-01-28_4070129  Prograf     1 mg    4 orally  bid    &lt;NA&gt;
+## 42 X240866534_2010-01-28_9659069  Prograf     1 mg    4 orally  bid    &lt;NA&gt;
+## 68 X410930205_2006-06-20_2809083  prograf      1mg    3 orally  bid    &lt;NA&gt;
+## 69 X410930205_2006-06-20_3473651  Prograf     &lt;NA&gt; &lt;NA&gt; orally  bid     3mg
+## 
+##         dosechange drugname_start dosestr.num strength.num doseamt.num
+##      40       &lt;NA&gt;            851          NA            1           4
+##      42       &lt;NA&gt;            162          NA            1           4
+##      68       &lt;NA&gt;            560          NA            1           3
+##      69       &lt;NA&gt;            870           3           NA          NA
+## 
+##         freq.num dose.intake intaketime dose.seq dose.daily
+##      40        2           4       &lt;NA&gt;       NA          8
+##      42        2           4       &lt;NA&gt;       NA          8
+##      68        2           3       &lt;NA&gt;       NA          6
+##      69        2           3       &lt;NA&gt;       NA          6</code></pre>
+<p>Date level:</p>
+<pre><code>##                         filename drugname strength dose  route freq dosestr
+## 29 X240866534_2010-01-28_4070129  Prograf     1 mg    4 orally  bid    &lt;NA&gt;
+## 42 X410930205_2006-06-20_2809083  prograf      1mg    3 orally  bid    &lt;NA&gt;
+## 
+##         dosechange drugname_start dosestr.num strength.num doseamt.num
+##      29       &lt;NA&gt;            851          NA            1           4
+##      42       &lt;NA&gt;            560          NA            1           3
+## 
+##         freq.num dose.intake intaketime dose.seq dose.daily
+##      29        2           4       &lt;NA&gt;       NA          8
+##      42        2           3       &lt;NA&gt;       NA          6</code></pre>
+<div id="comparing-to-gold-standard-1" class="section level3">
+<h3>Comparing to Gold Standard</h3>
+<p>We have provided the gold standards that we generated for part 2.</p>
+<p>Note level:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">tac_gs_part2_note &lt;-<span class="st"> </span><span class="kw">read.csv</span>(
+  <span class="kw">system.file</span>(<span class="st">&quot;examples&quot;</span>, <span class="st">&quot;tac_gs_part2_note.csv&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;EHR&quot;</span>),
+  <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span>, <span class="dt">na =</span> <span class="st">''</span>
+)</code></pre></div>
+<pre><code>##                         filename drugname drugname_start strength dose route
+## 40 X240866534_2010-01-28_4070129  Prograf            851        1    4    NA
+## 41 X240866534_2010-01-28_9659069  Prograf            162        1    4    NA
+## 68 X410930205_2006-06-20_3473651  Prograf            870       NA   NA    NA
+## 70 X410930205_2006-06-20_2809083  prograf            560        1    3    NA
+##    freq intaketime dosestr dosechange doseintake daily
+## 40    2       &lt;NA&gt;      NA       &lt;NA&gt;          4     8
+## 41    2       &lt;NA&gt;      NA       &lt;NA&gt;          4     8
+## 68    2       &lt;NA&gt;       3       &lt;NA&gt;          3     6
+## 70    2       &lt;NA&gt;      NA       &lt;NA&gt;          3     6</code></pre>
+<p>Date level:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">tac_gs_part2_date &lt;-<span class="st"> </span><span class="kw">read.csv</span>(
+  <span class="kw">system.file</span>(<span class="st">&quot;examples&quot;</span>, <span class="st">&quot;tac_gs_part2_date.csv&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;EHR&quot;</span>),
+  <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span>, <span class="dt">na =</span> <span class="st">''</span>
+)</code></pre></div>
+<pre><code>##                         filename drugname drugname_start strength dose route
+## 29 X240866534_2010-01-28_4070129  Prograf            851        1    4    NA
+## 42 X410930205_2006-06-20_3473651  Prograf            870       NA   NA    NA
+##    freq intaketime dosestr dosechange doseintake daily
+## 29    2       &lt;NA&gt;      NA       &lt;NA&gt;          4     8
+## 42    2       &lt;NA&gt;       3       &lt;NA&gt;          3     6</code></pre>
+<p>The following code compares the gold standard to the Part II output and provides the recall and precision measures for note level and date level collapsing for dose intake and daily dose. In order to replicate the results from this paper, we use the Part I gold standard as the input to <code>collapseDose</code>.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">precall &lt;-<span class="st"> </span><span class="cf">function</span>(dat, gs) {
+  tp1 &lt;-<span class="st"> </span><span class="kw">sum</span>(dat <span class="op">%in%</span><span class="st"> </span>gs)
+  fp1 &lt;-<span class="st"> </span><span class="kw">sum</span>(<span class="op">!</span>(dat <span class="op">%in%</span><span class="st"> </span>gs))
+  fn1 &lt;-<span class="st"> </span><span class="kw">sum</span>(<span class="op">!</span>(gs <span class="op">%in%</span><span class="st"> </span>dat))
+  r1 &lt;-<span class="st"> </span><span class="kw">c</span>(tp1, tp1 <span class="op">+</span><span class="st"> </span>fn1)
+  p1 &lt;-<span class="st"> </span><span class="kw">c</span>(tp1, tp1 <span class="op">+</span><span class="st"> </span>fp1)
+  r &lt;-<span class="st"> </span><span class="kw">rbind</span>(r1,p1)
+  <span class="kw">dimnames</span>(r) &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="kw">c</span>(<span class="st">'recall'</span>,<span class="st">'prec'</span>), <span class="kw">c</span>(<span class="st">'num'</span>,<span class="st">'den'</span>))
+  <span class="kw">cbind</span>(r, <span class="dt">prop =</span> <span class="kw">round</span>(r[,<span class="dv">1</span>] <span class="op">/</span><span class="st"> </span>r[,<span class="dv">2</span>], <span class="dv">2</span>))
+}
+
+metaData &lt;-<span class="st"> </span><span class="kw">bmd</span>(<span class="kw">unique</span>(tac_gs_part1<span class="op">$</span>filename))
+tacxr &lt;-<span class="st"> </span><span class="kw">collapseDose</span>(tac_gs_part1, metaData, <span class="st">'bid'</span>)</code></pre></div>
+<pre><code>## Warning: unable to calculate mode for route, naRoute set to &quot;orally&quot;</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">tacxr.note &lt;-<span class="st"> </span>tacxr[[<span class="st">'note'</span>]]
+tacxr.date &lt;-<span class="st"> </span>tacxr[[<span class="st">'date'</span>]]
+
+tacxr.note<span class="op">$</span>pid &lt;-<span class="st"> </span><span class="kw">sub</span>(<span class="st">&quot;_.*&quot;</span>,<span class="st">&quot;&quot;</span>,tacxr.note<span class="op">$</span>filename)
+tacxr.date<span class="op">$</span>pid &lt;-<span class="st"> </span><span class="kw">sub</span>(<span class="st">&quot;_.*&quot;</span>,<span class="st">&quot;&quot;</span>,tacxr.date<span class="op">$</span>filename)
+tac_gs_part2_note<span class="op">$</span>pid &lt;-<span class="st"> </span><span class="kw">sub</span>(<span class="st">&quot;_.*&quot;</span>,<span class="st">&quot;&quot;</span>,tac_gs_part2_note<span class="op">$</span>filename)
+tac_gs_part2_date<span class="op">$</span>pid &lt;-<span class="st"> </span><span class="kw">sub</span>(<span class="st">&quot;_.*&quot;</span>,<span class="st">&quot;&quot;</span>,tac_gs_part2_date<span class="op">$</span>filename)
+
+tacxrrow.note.intake &lt;-<span class="st"> </span><span class="kw">do.call</span>(paste, <span class="kw">c</span>(tacxr.note[,<span class="kw">c</span>(<span class="st">'pid'</span>,<span class="st">'dose.intake'</span>,
+                                                       <span class="st">'dosechange'</span>)],<span class="dt">sep =</span> <span class="st">'|'</span>))
+tacxrrow.note.daily &lt;-<span class="st"> </span><span class="kw">do.call</span>(paste, <span class="kw">c</span>(tacxr.note[,<span class="kw">c</span>(<span class="st">'pid'</span>,<span class="st">'intaketime'</span>,<span class="st">'dose.daily'</span>,
+                                                      <span class="st">'dosechange'</span>)], <span class="dt">sep =</span> <span class="st">'|'</span>))
+tacxrrow.date.intake &lt;-<span class="st"> </span><span class="kw">do.call</span>(paste, <span class="kw">c</span>(tacxr.date[,<span class="kw">c</span>(<span class="st">'pid'</span>,<span class="st">'dose.intake'</span>,
+                                                       <span class="st">'dosechange'</span>)], <span class="dt">sep =</span> <span class="st">'|'</span>))
+tacxrrow.date.daily &lt;-<span class="st"> </span><span class="kw">do.call</span>(paste, <span class="kw">c</span>(tacxr.date[,<span class="kw">c</span>(<span class="st">'pid'</span>,<span class="st">'intaketime'</span>,<span class="st">'dose.daily'</span>,
+                                                      <span class="st">'dosechange'</span>)], <span class="dt">sep =</span> <span class="st">'|'</span>))
+
+gs.tacxrrow.note.intake &lt;-<span class="st"> </span><span class="kw">do.call</span>(paste, <span class="kw">c</span>(tac_gs_part2_note[,<span class="kw">c</span>(<span class="st">'pid'</span>,<span class="st">'doseintake'</span>,
+                                                                 <span class="st">'dosechange'</span>)], <span class="dt">sep =</span> <span class="st">'|'</span>))
+gs.tacxrrow.note.daily &lt;-<span class="st"> </span><span class="kw">do.call</span>(paste, <span class="kw">c</span>(tac_gs_part2_note[,<span class="kw">c</span>(<span class="st">'pid'</span>,<span class="st">'intaketime'</span>,<span class="st">'daily'</span>,
+                                                                <span class="st">'dosechange'</span>)], <span class="dt">sep =</span> <span class="st">'|'</span>))
+gs.tacxrrow.date.intake &lt;-<span class="st"> </span><span class="kw">do.call</span>(paste, <span class="kw">c</span>(tac_gs_part2_date[,<span class="kw">c</span>(<span class="st">'pid'</span>,<span class="st">'doseintake'</span>,
+                                                                 <span class="st">'dosechange'</span>)], <span class="dt">sep =</span> <span class="st">'|'</span>))
+gs.tacxrrow.date.daily &lt;-<span class="st"> </span><span class="kw">do.call</span>(paste, <span class="kw">c</span>(tac_gs_part2_date[,<span class="kw">c</span>(<span class="st">'pid'</span>,<span class="st">'intaketime'</span>,<span class="st">'daily'</span>,
+                                                                <span class="st">'dosechange'</span>)], <span class="dt">sep =</span> <span class="st">'|'</span>))
+
+<span class="kw">precall</span>(tacxrrow.note.intake, gs.tacxrrow.note.intake)</code></pre></div>
+<pre><code>##        num den prop
+## recall 205 205    1
+## prec   205 205    1</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">precall</span>(tacxrrow.note.daily, gs.tacxrrow.note.daily)</code></pre></div>
+<pre><code>##        num den prop
+## recall 205 206    1
+## prec   205 205    1</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">precall</span>(tacxrrow.date.intake, gs.tacxrrow.date.intake)</code></pre></div>
+<pre><code>##        num den prop
+## recall 116 116    1
+## prec   116 116    1</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">precall</span>(tacxrrow.date.daily, gs.tacxrrow.date.daily)</code></pre></div>
+<pre><code>##        num den prop
+## recall 116 117 0.99
+## prec   116 116 1.00</code></pre>
+</div>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
