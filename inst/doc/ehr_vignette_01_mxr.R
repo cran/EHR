@@ -259,7 +259,10 @@ tac_lab
 ## ---- eval = FALSE, warning = FALSE-------------------------------------------
 #  collapseDose(x, noteMetaData, naFreq = 'most', ...)
 
-## -----------------------------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
+#  tac_part_ii <- collapseDose(tac_part_i_out_lastdose, tac_metadata, naFreq = 'most')
+
+## ---- echo = FALSE, warning = FALSE-------------------------------------------
 suppressWarnings(tac_part_ii <- collapseDose(tac_part_i_out_lastdose, tac_metadata, naFreq = 'most'))
 
 ## -----------------------------------------------------------------------------
@@ -268,7 +271,11 @@ tac_part_ii$note
 ## -----------------------------------------------------------------------------
 tac_part_ii$date
 
-## -----------------------------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
+#  data(lam_metadata, package = 'EHR')
+#  lam_part_ii <- collapseDose(lam_part_i_out, lam_metadata, naFreq = 'most', 'xr|er')
+
+## ---- echo = FALSE, warning = FALSE-------------------------------------------
 data(lam_metadata, package = 'EHR')
 suppressWarnings(lam_part_ii <- collapseDose(lam_part_i_out, lam_metadata, naFreq = 'most', 'xr|er'))
 

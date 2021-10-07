@@ -1,14 +1,17 @@
 ---
 title: "EHR Vignette for Structured Data"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{2. EHR Vignette for Structured Data}
-  %\VignetteEngine{knitr::rmarkdown}
-  \usepackage[utf8]{inputenc}
+output: rmarkdown::pdf_document
 ---
+
+<!--
+%\VignetteEngine{knitr::rmarkdown}
+%\VignetteIndexEntry{2. EHR Vignette for Structured Data}
+%\VignetteEncoding{UTF-8}
+-->
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(R.options = list(width = 100))
 
 library(EHR)
 library(lubridate)
@@ -52,11 +55,11 @@ co <- function(expr) {
 
 # Introduction
 
-The `EHR` package provides several modules to perform diverse medication-related studies using data from electronic health record (EHR) databases. Especially, the package includes modules to perform pharmacokinetic/pharmacodynamic (PK/PD) analyses using EHRs, as outlined in Choi *et al.*$^{1}$, and additional modules will be added in the future. This vignette describes four modules for processing data (*Pro-Demographic*, *Pro-Med-Str*, *Pro-Drug Level*, *Pro-Laboratory*) and one module for PK data building (*Build-PK-IV*) in the system, when data are typically obtained from a structured database.
+The `EHR` package provides several modules to perform diverse medication-related studies using data from electronic health record (EHR) databases. Especially, the package includes modules to perform pharmacokinetic/pharmacodynamic (PK/PD) analyses using EHRs, as outlined in Choi *et al.*$^{1}$, and additional modules will be added in the future. This vignette describes four modules for processing data (*Pro-Demographic*, *Pro-Med-Str*, *Pro-Drug Level*, *Pro-Laboratory*) and one module for PK data building (*Build-PK-IV*) for intravenously administered medications, when data are typically obtained from a structured database. The *Pro-Med-Str* module consists of two parts for processing structured medication data, one for intravenous (IV) infusion or bolus dose given to inpatients, one for electronic (e)-prescription medication data.
 
 The process starts with structured data extracted by Structured Query Language (SQL) from EHRs or provided by a user, then moves through two phases: data processing which standardizes and combines the input data (*Pro-Med-Str*, *Pro-Drug Level*, etc.) and data building which creates the final PK data (*Build-PK-IV*).
 
-The vignette has two examples. The first example demonstrates how to build PK data quickly without using the data processing modules when cleaned data for concentration, drug dose, demographic and laboratory datasets are already available in an appropriate data form. The second example shows how to utilize several data processing modules to standardize and combine more complex datasets, and then finally build PK data using *Build-PK-IV*.
+The vignette has two examples. The first example demonstrates how to build PK data without using the data processing modules when cleaned concentration, drug dose, demographic and laboratory datasets are available in an appropriate data form. The second example shows how to use several data processing modules to standardize and combine more complex datasets, and build PK data using *Build-PK-IV*.
 
 To begin we load the `EHR` package, the `pkdata` package, and the `lubridate` package. 
 
@@ -69,15 +72,16 @@ library(lubridate)
 
 # Example 1: Quick Data Building with Processed Datasets
 
-The data for example 1 includes a demographic file, a concentration file, an intravenous (IV) dosing file, and a laboratory file, which are all cleaned and formatted appropriately. We also define a directory for the raw data and a directory for interactive checking output files.
+The data for example 1 includes a demographic file, a concentration file, an IV dosing file, and a laboratory file, which are all cleaned and formatted appropriately. We also define a directory for the raw data and a directory for interactive checking output files.
 
 ```{r simp-in}
 # define directories
 td <- tempdir()
-dir.create(file.path(td, 'check1'))
-rawDataDir <- system.file("examples", "str_ex1", package="EHR")
 checkDir <- file.path(td, 'check1')
+rawDataDir <- system.file("examples", "str_ex1", package="EHR")
+dir.create(checkDir)
 
+# pre-processed demographic data 
 demo <- read.csv(file.path(rawDataDir,"Demographics_DATA_simple.csv"))
 head(demo)
 
@@ -91,7 +95,7 @@ creat.data <- read.csv(file.path(rawDataDir,"Creatinine_DATA_simple.csv"))
 head(creat.data)
 ```
 
-The `EHR` package modules use a standardized naming convention for patient identification (ID) variables. We rename the unique patient-level ID from `patient_id` to `mod_id` and the visit-level ID from `patient_visit_id` to `mod_id_visit`. If there is only a single visit/course per subject the unique patient-level ID and visit-level ID can be the same, however both `mod_id` and `mod_id_visit` should be defined.
+The `EHR` package modules use a standardized naming convention for patient identification (ID) variables. We rename the unique patient-level ID from `patient_id` to `mod_id` and the visit-level ID from `patient_visit_id` to `mod_id_visit`. The visit-level ID can be used to distinguish different visits (i.e., occasions) when the same patient has multiple hospitalizations. If there is only a single visit per subject the unique patient-level ID and visit-level ID can be the same. <!--, however both `mod_id` and `mod_id_visit` should be defined.-->
 
 ```{r simp-rename}
 names(conc.data)[1:2] <- names(demo)[1:2] <- c("mod_id", "mod_id_visit")
@@ -103,16 +107,17 @@ Using the four datasets, we can build a final PK dataset with the function `run_
 ```{r sim-build-pk-iv, eval = FALSE}
 simple_pk_dat <- run_Build_PK_IV(
     conc=conc.data,
+    conc.columns = list(id = 'mod_id', datetime = 'date.time', druglevel = 'conc.level', 
+                        idvisit = 'mod_id_visit'),
     dose=ivdose.data,
-    lab.dat = list(creat.data),
-    lab.vars = c('creat'),
+    dose.columns = list(id = 'mod_id', date = 'date.dose', infuseDatetime = 'infuse.time', 
+                        infuseDose = 'infuse.dose', infuseTimeExact= 'infuse.time.real', 
+                        bolusDatetime = 'bolus.time', bolusDose = 'bolus.dose', 
+                        gap = 'maxint', weight = 'weight'),
     demo.list = demo,
-    demo.vars=c('weight', 'weight_demo', 'height', 'gender', 'ageatsurgery',
-                'stat_sts', 'cpb_sts', 'length_of_icu_stay'),
-    demo.abbr=c('wgt', 'wgt_demo', 'height', 'gender',
-                'age', 'stat', 'cpb', 'loi'),
-    pk.vars=c('mod_id_visit', 'time', 'conc', 'dose', 'rate', 'event',
-              'other', 'multiple.record', 'date', 'mod_id'),
+    demo.columns = list(id = 'mod_id', idvisit = 'mod_id_visit'),
+    lab.list = list(creat.data),
+    lab.columns = list(id = 'mod_id', datetime = 'date.time'),
     drugname='fent',
     check.path=checkDir)
 ```
@@ -121,16 +126,17 @@ simple_pk_dat <- run_Build_PK_IV(
 co({
 simple_pk_dat <- run_Build_PK_IV(
     conc=conc.data,
+    conc.columns = list(id = 'mod_id', datetime = 'date.time', druglevel = 'conc.level', 
+                        idvisit = 'mod_id_visit'),
     dose=ivdose.data,
-    lab.dat = list(creat.data),
-    lab.vars = c('creat'),
+    dose.columns = list(id = 'mod_id', date = 'date.dose', infuseDatetime = 'infuse.time', 
+                        infuseDose = 'infuse.dose', infuseTimeExact= 'infuse.time.real', 
+                        bolusDatetime = 'bolus.time', bolusDose = 'bolus.dose', 
+                        gap = 'maxint', weight = 'weight'),
     demo.list = demo,
-    demo.vars=c('weight', 'weight_demo', 'height', 'gender', 'ageatsurgery',
-                'stat_sts', 'cpb_sts', 'length_of_icu_stay'),
-    demo.abbr=c('wgt', 'wgt_demo', 'height', 'gender',
-                'age', 'stat', 'cpb', 'loi'),
-    pk.vars=c('mod_id_visit', 'time', 'conc', 'dose', 'rate', 'event',
-              'other', 'multiple.record', 'date', 'mod_id'),
+    demo.columns = list(id = 'mod_id', idvisit = 'mod_id_visit'),
+    lab.list = list(creat.data),
+    lab.columns = list(id = 'mod_id', datetime = 'date.time'),
     drugname='fent',
     check.path=checkDir)
 })
@@ -142,14 +148,14 @@ head(simple_pk_dat,15)
 
 # Example 2: Complete Data Processing and Building from Raw Extracted Data to PK Data 
 
-To begin example 2 we define three directories for the raw data, the processed data, and files used for interactive checking.
+To begin example 2 we define directories for the raw data, the processed data, and files used for interactive checking. If a file path for interactive checking is not provided, the interactive checking will not be performed.
 
 ```{r ex2-dirs}
-dir.create(file.path(td, 'data2'))
-dir.create(file.path(td, 'check2'))
-rawDataDir <- system.file("examples", "str_ex2", package="EHR")
 dataDir <- file.path(td, 'data2')
 checkDir <- file.path(td, 'check2')
+rawDataDir <- system.file("examples", "str_ex2", package="EHR")
+dir.create(dataDir)
+dir.create(checkDir)
 ```
 
 ## Pre-Processing for Raw Extracted Data
@@ -162,7 +168,7 @@ Each raw dataset should contain a subject unique ID, a subject visit ID, or both
 
 ### (1) Read and clean raw data
 
-The demographics data file contains ID variables `subject_id` and `subject_uid`, in addition to demographic variables such as gender, date of birth, height, weight, etc. The Demographics_DATA.csv file is read in using the `readTransform()` function. 
+The demographics data file contains ID variables `subject_id` and `subject_uid`, in addition to demographic variables such as gender, date of birth, height, weight, etc. The Demographics_DATA.csv file is read in using the `readTransform()` function. <!--As the date and time for surgery is not in the data, which is a required variable, a new variable `date.time` is created using date for surgery (`surgery_date`) and time of surgery in military time format (`time_fromor`).-->
 
 ```{r demo-in}
 # demographics data
@@ -202,7 +208,7 @@ The same steps can be used for the sample values data csv file. It is read in us
 ```{r conc-in1}
 # concentration sample values data
 # read in raw data
-conc.raw<-read.csv(file.path(rawDataDir, "SampleConcentration_DATA.csv"))
+conc.raw <-read.csv(file.path(rawDataDir, "SampleConcentration_DATA.csv"))
 head(conc.raw)
 
 # helper function used to make subject_id
@@ -244,15 +250,37 @@ conc.in <- readTransform(file.path(rawDataDir, "SampleConcentration_DATA.csv"),
 head(conc.in)
 ```
 
-The example drug dosing data consists of files FLOW_DATA.csv and MAR_DATA.csv containing two sources of IV dose information. The FLOW data csv file contains aliases for both ID variables; it is read in with the `readTransform()` function which renames the variables `Subject.Id` to `subject_id` and `Subject.Uniq.Id` to `subject_uid`. 
+The example drug dosing data consists of files FLOW_DATA.csv and MAR_DATA.csv containing two sources of IV dose information (for details about these data sources, see *Pro-Med-Str* module below). The FLOW data csv file contains aliases for both ID variables; it is read in with the `readTransform()` function which renames the variables `Subject.Id` to `subject_id` and `Subject.Uniq.Id` to `subject_uid`, and creates the required `date.time`, `unit`, and `rate` variables.
 
 ```{r flow-in}
 # FLOW dosing data
 flow.in <- readTransform(file.path(rawDataDir, "FLOW_DATA.csv"),
-                         rename = c('Subject.Id' = 'subject_id',
-                                    'Subject.Uniq.Id' = 'subject_uid')) 
+ rename = c('Subject.Id' = 'subject_id',
+            'Subject.Uniq.Id' = 'subject_uid'),
+ modify=list(
+  date.time = expression(pkdata::parse_dates(EHR:::fixDates(Perform.Date))),
+  unit = expression(sub('.*[ ]', '', Final.Rate..NFR.units.)),
+  rate = expression(as.numeric(sub('([0-9.]+).*', '\\1', Final.Rate..NFR.units.)))
+  )
+ ) 
 head(flow.in)
 ```
+
+<!--
+```{r flow-in0}
+# FLOW dosing data
+flow.in <- readTransform(file.path(rawDataDir, "FLOW_DATA.csv"),
+                         rename = c('Subject.Id' = 'subject_id',
+                                    'Subject.Uniq.Id' = 'subject_uid')) 
+# pre-process the flow data 
+# date.time variable should be in an appropriate form
+flow.in[,'date.time'] <- pkdata::parse_dates(EHR:::fixDates(flow.in[,'Perform.Date']))
+# unit and rate are required: separate unit and rate from 'Final.Rate..NFR.units.' if needed
+flow.in[,'unit'] <- sub('.*[ ]', '', flow.in[,'Final.Rate..NFR.units.'])
+flow.in[,'rate'] <- as.numeric(sub('([0-9.]+).*', '\\1', flow.in[,'Final.Rate..NFR.units.']))
+head(flow.in)
+```
+-->
 
 The MAR data csv file contains several variables with a colon (:) character. To preserve the colon in these variable names, the data can be read in without checking for syntactically valid `R` variable names. The data is read in using `read.csv()` with the argument `check.names = FALSE` and then passed to the `dataTransformation()` function which renames `Uniq.Id` to `subject_uid`.
 
@@ -274,7 +302,7 @@ head(creat.in)
 # Albumin lab data
 alb.in <- readTransform(file.path(rawDataDir, "Albumin_DATA.csv"),
     rename = c('Subject.uniq' = 'subject_uid'))
-head(creat.in)
+head(alb.in)
 ```
 
 ### (2) Merge data to create new ID variables
@@ -366,7 +394,7 @@ saveRDS(creat.cln, file=file.path(dataDir,"Fentanyl_creat_mod_id.rds"))
 saveRDS(alb.cln, file=file.path(dataDir,"Fentanyl_alb_mod_id.rds"))
 ```
 
-Before running the processing modules, it is necessary to define several options and parameters. Using `options(pkxwalk =)` allows the modules to access the crosswalk file. We also create a `drugname` stub and define the lower limit of quantification (LLOQ) for the drug of interest.
+Before running the processing modules, it is necessary to define several options and parameters. Using `options(pkxwalk =)` allows the modules to access the crosswalk file. We also create a `drugname` stub and define the lower limit of quantification (LLOQ) for the drug of interest, which is optional.
 
 ```{r mod-setup}
 # set crosswalk option 
@@ -399,27 +427,28 @@ demo.out$exclude
 ```
 
 * The `run_Demo` function arguments are as follows:
-    + `demo.path`: file path where cleaned demographic data exist
+    + `demo.path`: file name of demographic file (CSV, RData, RDS) or data.frame
     + `toexclude`: (optional) a set of user-defined expressions to set exclusion rules to be applied to the demographic dataset within the module
     + `demo.mod.list`: (optional) a list of user defined expressions to set modification rules within the module
 
-See the `run_Demo()` function documentation for more details on the optional arguments.
+See the `run_Demo()` function documentation for more examples.
 
 * The output of `run_Demo()` is a list with two components: `demo`, a dataframe containing a demogrpahic information and `exclude`, vector of excluded visit IDs.
 
 ## Pro-Med-Str
 
-The *Pro-Med-Str* module processes structured medication data. Part I handles IV dose data and Part II handles e-prescription data.
+The *Pro-Med-Str* module processes structured medication data. Part I handles IV dose data and Part II handles e-prescription dose data.
 
 ### Part I: IV dose data
 
-Part I handles IV dose data from two sources, Flow data and Medication Administration Records (MAR) data. The Flow data are patient flow sheets which at this institution record infusion rates and changes to all infusions for all inpatients outside of the operating room. The MAR data  record all bolus doses of medications and infusions administered in the operating room. The module is semi-interactive; it generates several files to check potential data errors and get feedback from an investigator. If corrected information ('fix' files) are provided, the module should be re-run to incorporate the corrections. The major functions of this module are:
-
-* Process and clean Flow data by selecting, renaming, and modifying variables with the `flow.select`, `flow.rename`, and `flow.mod.list` parameters, and remove duplicate records, including invalid duplicate rows with `final.units` of 0, rate missing, one rate or unit missing, one unit of 0, or additional discrepancy.
+Part I handles IV dose data from two sources, Flow data and Medication Administration Records (MAR) data.
+In this example, the Flow data are patient flow sheets which record infusion rates and changes outside of the operating room, while the MAR data record all bolus and infusion doses administered in the operating room before 11/01/2017. After 11/01/2017 when a new EHR system -- *Epic* -- was implemented, MAR data recorded all types of medications for inpatients. Thus, while MAR data is required, the use of Flow sheet data is optional for this module. The module can be semi-interactive for data checking (although it is not required, we recommend using this feature); if `check.path` is provided (the default is NULL), it can generate several files to check potential data errors and get feedback from an investigator. If corrected information ('fix' files) are provided, the module should be re-run to incorporate the corrections. The major functions of this module are:
 
 * Process MAR data using the given medications in the `medchk.path` file, infusion units, bolus units, and bolus rate threshold. If there are data rows containing units other than those specified, a file listing these records will be produced using the `failunit_fn` stub appended with drugname.
      + e.g., if failunit_fn is 'Unit' the file 'failUnit-fent.csv' will be created in the `check.path` directory. The corrected file should replace 'fail' with 'fix' (e.g., 'fixUnit-fent.csv'), and include an additional variable called 'flag' with the value 'keep' for the records to be retained.
-  
+
+* Process and clean Flow data, which remove duplicate records, including invalid duplicate rows with `final.units` of 0, rate missing, one rate or unit missing, one unit of 0, or additional discrepancy. 
+
 * Check for records with a unit containing 'kg' (e.g., 'mcg/kg/hr') but missing weight in flow data. These records will result in a calculated rate of NA when producing standardized rates (see step below). If there are records with missing weight, a file listing these records will be produced using the `failnowgt_fn` stub appended with drugname. A 'fix' file can be added to correct these records.
 
 * Combine Flow and MAR infusion data and produce standardized rate (dose per unit time). Infusion rates with dose per weight per unit time (e.g., 'mcg/kg/hr') and dose per unit time ('mcg/hr') can both be handled. For infusion rates of dose per weight per unit time, weight is imputed using the closest available Flow weight (if possible) and the rate is multiplied by weight to get dose per unit time. Infusion rates of dose per unit time are assumed to be formatted correctly.
@@ -429,49 +458,55 @@ Part I handles IV dose data from two sources, Flow data and Medication Administr
 The IV dose data can be processed by the `run_MedStrI()` function using: 
 
 ```{r Pro-Med-Str1, eval=FALSE}
-ivdose.out <- run_MedStrI(flow.path=file.path(dataDir,"Fentanyl_flow_mod_id.rds"), 
-    flow.select = c('mod_id','mod_id_visit','Perform.Date','Final.Wt..kg.',
-                    'Final.Rate..NFR.units.','Final.Units'),
-    flow.rename = c('mod_id','mod_id_visit', 'Perform.Date', 'weight',
-                    'rate', 'final.units'),
-    flow.mod.list = list(
-      date.time = expression(parse_dates(fixDates(Perform.Date))),
-      unit = expression(sub('.*[ ]', '', rate)),
-      rate = expression(as.numeric(sub('([0-9.]+).*', '\\1', rate)))),
-    medchk.path=file.path(rawDataDir, sprintf('medChecked-%s.csv', drugname)), 
+ivdose.out <- run_MedStrI(
     mar.path=file.path(dataDir,"Fentanyl_mar_mod_id.rds"),
-    demo.list=demo.out,
-    check.path=checkDir, 
+    mar.columns = list(id = 'mod_id', datetime = c('Date','Time'), dose = 'med:dosage', 
+                       drug = 'med:mDrug', given = 'med:given'),
+    medGivenReq = TRUE,
+    flow.path=file.path(dataDir,"Fentanyl_flow_mod_id.rds"),
+    flow.columns = list(id = 'mod_id', datetime = 'date.time', finalunits = 'Final.Units', 
+                        unit = 'unit', rate = 'rate', weight = 'Final.Wt..kg.'),
+    medchk.path = file.path(rawDataDir, sprintf('medChecked-%s.csv', drugname)),
+    demo.list = NULL,
+    demo.columns = list(),
+    missing.wgt.path = NULL,
+    wgt.columns = list(),
+    check.path = checkDir,
     failflow_fn = 'FailFlow',
     failunit_fn = 'Unit',
     failnowgt_fn = 'NoWgt',
     infusion.unit = 'mcg/kg/hr',
     bolus.unit = 'mcg',
     bol.rate.thresh = Inf,
+    rateunit = 'mcg/hr',
+    ratewgtunit = 'mcg/kg/hr',
+    weightunit = 'kg',
     drugname = drugname)
 ```
 
 ```{r Pro-Med-Str1-fake, echo=FALSE}
 co({
-ivdose.out <- run_MedStrI(flow.path=file.path(dataDir,"Fentanyl_flow_mod_id.rds"), 
-    flow.select = c('mod_id','mod_id_visit','Perform.Date','Final.Wt..kg.',
-                    'Final.Rate..NFR.units.','Final.Units'),
-    flow.rename = c('mod_id','mod_id_visit', 'Perform.Date', 'weight',
-                    'rate', 'final.units'),
-    flow.mod.list = list(
-      date.time = expression(parse_dates(fixDates(Perform.Date))),
-      unit = expression(sub('.*[ ]', '', rate)),
-      rate = expression(as.numeric(sub('([0-9.]+).*', '\\1', rate)))),
-    medchk.path=file.path(rawDataDir, sprintf('medChecked-%s.csv', drugname)), 
+ivdose.out <- run_MedStrI(
     mar.path=file.path(dataDir,"Fentanyl_mar_mod_id.rds"),
-    demo.list=demo.out,
-    check.path=checkDir, 
+    mar.columns = list(id = 'mod_id', datetime = c('Date','Time'), dose = 'med:dosage', drug = 'med:mDrug', given = 'med:given'),
+    medGivenReq = TRUE,
+    flow.path=file.path(dataDir,"Fentanyl_flow_mod_id.rds"),
+    flow.columns = list(id = 'mod_id', datetime = 'date.time', finalunits = 'Final.Units', unit = 'unit', rate = 'rate', weight = 'Final.Wt..kg.'),
+    medchk.path = file.path(rawDataDir, sprintf('medChecked-%s.csv', drugname)),
+    demo.list = NULL,
+    demo.columns = list(),
+    missing.wgt.path = NULL,
+    wgt.columns = list(),
+    check.path = checkDir,
     failflow_fn = 'FailFlow',
     failunit_fn = 'Unit',
     failnowgt_fn = 'NoWgt',
     infusion.unit = 'mcg/kg/hr',
     bolus.unit = 'mcg',
     bol.rate.thresh = Inf,
+    rateunit = 'mcg/hr',
+    ratewgtunit = 'mcg/kg/hr',
+    weightunit = 'kg',
     drugname = drugname)
     })
 ```
@@ -481,14 +516,17 @@ head(ivdose.out)
 ```
 
 * The `run_MedStrI` function arguments are as follows:
-    + `flow.path`: file path where Flow data exist
-    + `flow.select`: list of variables in the Flow data, which are used for processing
-    + `flow.rename`: rename variables for the variables in flow.select
-    + `flow.mod.list`: list containing modifications to variables in the Flow data
-    + `medchk.path`: file path with list of medication names and variants in MAR data to be used 
-    + `mar.path`: file path where the MAR data exist
-    + `demo.list`: (optional) file name for processed demographic file that is used to exclude subjects based on exclusion criteria 
-    + `check.path`: file path where the generated files for data checking are stored, and the corresponding data files with fixed data exist
+    + `mar.path`: filename of MAR data (CSV, RData, RDS), or data.frame
+    + `mar.columns`: a named list that should specify columns in MAR data; ‘id’, ‘datetime’ and ‘dose’ are required. ‘drug’, ‘weight’, ‘given’ may also be specified. ‘datetime’ is date and time for data measurement, which can refer to a single date-time variable (datetime = ‘date_time’) or two variables holding date and time separately (e.g., datetime = c(‘Date’, ‘Time’)). ‘dose’ can also be given as a single variable or two variables. If given as a single column, the column's values should contain dose and units such as ‘25 mcg’. If given as two column names, the dose column should come before the unit column (e.g., dose = c(‘doseamt’, ‘unit’)). If ‘drug’ is present, the ‘medchk.path’ argument should also be provided. The ‘given’ variable should be used in conjunction with the ‘medGivenReq’ argument.
+    + `medGivenReq`: indicator if values in the MAR given column should equal "Given";  if this is FALSE (the default), NA values are also acceptable.
+    + `flow.path`: (optional) file name of flow data (CSV, RData, RDS), or data.frame
+    + `flow.columns`: a named list that should specify columns in flow data; ‘id’, ‘datetime’, ‘finalunits’, ‘unit’, ‘rate’, ‘weight’ are required. ‘idvisit’ may also be specified. ‘datetime’ is date and time for data measurement, which can refer to a single date-time variable (datetime = ‘date_time’) or two variables holding date and time separately (e.g., datetime = c(‘Date’, ‘Time’)).
+    + `medchk.path`: (optional) file name containing data set (CSV, RData, RDS), or data.frame; should have the column ‘medname’ with list of acceptable drug names used to filter MAR data.
+    + `demo.list`: (optional) demographic data; if available, the output from `run_Demo` or a correctly formatted data.frame, which can be used to impute weight when missing
+    + `demo.columns`: a named list that should specify columns in demographic data; ‘id’, ‘datetime’, and ‘weight’ are required. ‘datetime’ is the date and time when the demographic data were obtained, which can refer to a single date-time variable (datetime = ‘date_time’) or two variables holding date and time separately (e.g., datetime = c(‘Date’, ‘Time’)).
+    + `missing.wgt.path`: (optional) filename containing additional weight data (CSV, RData, RDS), or data.frame. The variables in this file should be defined in the ‘wgt.columns’ argument.
+    + `wgt.columns`: a named list that should specify columns in weight data; ‘id’, ‘datetime’, and ‘weight’ are required. ‘datetime’ is date and time for weight measurement, which can refer to a single date-time variable (datetime = ‘date_time’) or two variables holding date and time separately (e.g., datetime = c(‘Date’, ‘Time’)).
+    + `check.path`: (optional) file path where the generated files for data checking are stored, and the corresponding data files with fixed data exist. The default (NULL) will not produce any check files.
     + `failflow_fn`: filename stub for invalid duplicate rows in the Flow data with rate of 0 check file. The stub will be prepended with the string 'fail' to create a .csv with the invalida data. The corrected data with failures replaced should use the same filename stub prepended with the string 'fix'.
          - e.g., if `failflow_fn` is 'FailFlow', the file 'failFailFlow.csv' with invalid duplicate rows will be created in the directory specified by `check.path`. The corrected version named 'fixFailFlow.csv' should be placed in the same directory.
     + `failunit_fn`: filename stub for records with units other than those specified with `infusion.unit` and `bolus.unit`
@@ -496,8 +534,21 @@ head(ivdose.out)
     + `infusion.unit`: string specifying units for infusion doses (default: 'mcg/kg/hr')
     + `bolus.unit`: string specifying units for bolus doses (default: 'mcg')
     + `bol.rate.thresh`: upper bound for retaining bolus doses. Bolus units with a rate above the threshold are dropped (default: Inf; i.e., keep all bolus doses)
+    + `rateunit`: string specifying units for hourly rate (default: 'mcg/hr')
+    + `ratewgtunit`: string specifying units for hourly rate by weight (default: 'mcg/kg/hr')
+    + `weightunit`: string specifying units for weight (default: 'kg')
     + `drugname`: drug name of interest (e.g., dex, fent)
-* The output of the `run_MedStrI` function is a dataset with processed IV dosing data including date (date.dose), infusion dose time (infuse.time.real and infuse.time) and rate (infuse.dose), bolus dose time (bolus.time) and dose level (bolus.dose), weight used in dose calculation and identification numbers for further merging with the output from other modules.
+* The output of the `run_MedStrI` function is a dataset with processed IV dosing data with the following variables:
+    + user provided identification numbers for further merging with the output from other modules (e.g., mod_id in this example data)
+    + date.dose: date of dose administration
+    + infuse.time.real: actual infusion dosing time
+    + infuse.time: infusion dose time processed (rounded time) based on continuous infusion time
+    + infuse.dose: infusion dose amount (e.g., calculated by rate $\times$ weight if the unit includes weight)
+    + bolus.time: bolus dose time
+    + bolus.dose: bolus dose amount
+    + given.dose: the raw dose given is preserved from the flow sheet data when available (identified as "finalunits" in flow.columns)
+    + maxint: infusion recording interval (e.g., default: maxint = 15 min for MAR data; maxint = 60 min for flow data). In a typical setting this variable should be unused but it may be specified as the "gap" variable in the "dose.columns" argument of the `run_Build_PK_IV` function (see  *Build-PK-IV* below for details).
+    + weight: subject body weight recorded near infusion time, which will be used in dose calculation
 
 ### Part II: e-prescription data
 
@@ -519,35 +570,35 @@ The e-prescription data can be processed by the `run_MedStrII` function using:
 
 ```{r Pro-Med-Str2}
 eRX.out <- run_MedStrII(file.path(rawDataDir,"e-rx_DATA.csv"),
-    select = c('GRID','MED_NAME','RX_DOSE','FREQUENCY','ENTRY_DATE','STRENGTH_AMOUNT','DESCRIPTION'),
-    rename = c('ID','MED_NAME','RX_DOSE','FREQUENCY','ENTRY_DATE','STRENGTH_AMOUNT','DESCRIPTION'))
+    dat.columns = list(id = 'GRID', dose = 'RX_DOSE', freq = 'FREQUENCY', date = 'ENTRY_DATE', 
+                       str = 'STRENGTH_AMOUNT', desc = 'DESCRIPTION')
+)
 
 eRX.out
 ```
 
 The following arguments are used in the `run_MedStrII` function:
 
-* `file`: file name of prescription data
-* `select`: the names of the columns to select
-* `rename`: new column names; the default are the names required for the underlying functions, `processErx` and `processErxAddl`
+* `file`: file name of prescription data (CSV, RData, RDS), or data.frame
+* `dat.columns`: a named list that should specify columns in data; ‘id’, ‘dose’, ‘freq’, ‘date’, and ‘str’ are required. ‘desc’ may also be specified.
 
-In the above example, daily dose was calculated for the first 5 patients by multiplying strength\*dose\*freq.num, and a redundant daily dose was removed for the patient with ID2. In order to calculate a daily dose for the patient with ID3, the strength of 100 from the description was used because STRENGTH_AMOUNT was missing. For the patient with ID6, the dose amounts of 1.5, 1, and 1.5 are added together to get a dose of 4, and the daily dose is calculated as strength\*dose.
+In the above example, daily dose was calculated for the first 5 patients by multiplying strength $\times$ dose $\times$ freq.num, and a redundant daily dose was removed for the patient with ID2. In order to calculate a daily dose for the patient with ID3, the strength of 100 from the description was used because STRENGTH_AMOUNT was missing. For the patient with ID6, the dose amounts of 1.5, 1, and 1.5 are added together to get a dose of 4, and the daily dose is calculated as strength $\times$ dose.
 
 
 ## Pro-Drug Level
-Pro-Drug Level module processes drug concentration data that can be merged with medication dose data and other types of data. This module is semi-interactive; it generates several files while processing in order to check missing data and potential data errors, and get feedback from an investigator. If corrected information ('fix' files) are provided, the module should be re-run to incorporate the corrections. The major functions of this module are:
+Pro-Drug Level module processes drug concentration data that can be merged with medication dose data and other types of data. This module can be semi-interactive for data checking (although it is not required, we recommend using this feature); if `check.path` is provided (the default is NULL), the module will generate several files to check missing data and potential data errors, and get feedback from an investigator. If corrected information ('fix' files) are provided, the module should be re-run to incorporate the corrections. The major functions of this module are:
 
 * Combine drug concentration data with sampling time: This step is necessary only if the drug concentration data file does not contain the sampling time (i.e., the time when blood samples were drawn for drug concentration measurements). When this is the case, the sampling time should be obtained from a separate data file.
 
-* Check missing date/time for drug level measurements. If there are any missing dates, a file listing these records will be produced using the `failmiss_fn` stub appended with drugname. A 'fix' file can be added to correct these records. If no 'fix' file is provided, records with missing dates will be removed.
+* Check missing date-time for drug level measurements. If there are any missing dates, a file listing these records will be produced using the `failmiss_fn` stub appended with drugname. A 'fix' file can be added to correct these records. If no 'fix' file is provided, records with missing dates will be removed.
      + e.g., if `failmiss_fn` is 'MissingConcDate-', the file 'failMissingConcDate-dex.csv' will be created in the `check.path` directory. The file with corrected dates and times should replace 'fail' with 'fix' (e.g., 'fixMissingConcDate-dex.csv'), and be placed in the same `check.path` directory.
 
 
 * Check for multiple sets of concentration data for the same subject, and keep the set of concentration data with the most drug concentration records above a lower limit of quantification (LLOQ). Data for subjects with multiple records, if any, is included in a file produced with the `multsets_fn` stub appended with the drugname and date.
-     + e.g., if `multsets_fn` is 'multipleSetsConc-', the file 'multipleSetsConc-dex2020-07-15.csv' will be created in the `check.path` directory.
+     + e.g., if `multsets_fn` is 'multipleSetsConc-', the file such as 'multipleSetsConc-dex2020-07-15.csv' will be created in the `check.path` directory.
 
 
-* Check duplicate concentration records on the same date/time. If there are any records with multiple concentrations on the same date/time, a file listing these records will be produced using the `faildup_fn` stub appended with drugname. A 'fix' file can be added to correct these records. If no 'fix' file is found, all duplicates are retained. 
+* Check duplicate concentration records on the same date-time. If there are any records with multiple concentrations on the same date-time, a file listing these records will be produced using the `faildup_fn` stub appended with drugname. A 'fix' file can be added to correct these records. If no 'fix' file is found, all duplicates are retained. 
      + e.g., if `faildup_fn` is 'DuplicateConc-', the file 'failDuplicateConc-dex.csv' will be created in the `check.path` directory.
 The corrected file should replace 'fail' with 'fix', e.g. 'fixDuplicateConc-dex.csv', and include an additional variable called 'flag' with the value 'keep' for the records to be retained.
 
@@ -567,7 +618,6 @@ conc.out <- run_DrugLevel(conc.path=file.path(dataDir,"Fentanyl_conc_mod_id.rds"
     drugname=drugname,
     LLOQ=LLOQ,
     demo.list=demo.out)
-head(conc.out)
 ```
 
 ```{r Pro-Drug-Level-fake, echo=FALSE}
@@ -612,7 +662,7 @@ After providing the updated file, the same `run_DrugLevel()` function should be 
 ```{r Pro-Drug-Level-rerun, eval=FALSE}
 conc.out <- run_DrugLevel(conc.path=file.path(dataDir,"Fentanyl_conc_mod_id.rds"),
     conc.select=c('mod_id','mod_id_visit','samp','fentanyl_calc_conc'),
-    conc.rename=c(fentanyl_calc_conc = 'conc.level', samp= 'event'),
+    conc.rename=c(fentanyl_calc_conc = 'conc.level', samp = 'event'),
     conc.mod.list=list(mod_id_event = expression(paste(mod_id_visit, event, sep = '_'))),
     samp.path=file.path(dataDir,"Fentanyl_samp_mod_id.rds"),
     samp.mod.list=list(mod_id_event = expression(paste(mod_id_visit, samp, sep = '_'))),
@@ -629,7 +679,7 @@ conc.out <- run_DrugLevel(conc.path=file.path(dataDir,"Fentanyl_conc_mod_id.rds"
 co({
 conc.out <- run_DrugLevel(conc.path=file.path(dataDir,"Fentanyl_conc_mod_id.rds"),
     conc.select=c('mod_id','mod_id_visit','samp','fentanyl_calc_conc'),
-    conc.rename=c(fentanyl_calc_conc = 'conc.level', samp= 'event'),
+    conc.rename=c(fentanyl_calc_conc = 'conc.level', samp = 'event'),
     conc.mod.list=list(mod_id_event = expression(paste(mod_id_visit, event, sep = '_'))),
     samp.path=file.path(dataDir,"Fentanyl_samp_mod_id.rds"),
     samp.mod.list=list(mod_id_event = expression(paste(mod_id_visit, samp, sep = '_'))),
@@ -653,14 +703,32 @@ ms <- file.path(checkDir,paste0("multipleSetsConc-", drugname, Sys.Date(),".csv"
 if (file.exists(ms)) file.remove(ms)
 ```
 
+Before discussing the function arguments, we should first describe the expected data: either a single concentration data set, or concentration data plus sampling time data. If the concentration data set includes a date-time variable, then sampling time data is not necessary.
+
+Concentration data should include the following named columns:
+
+  1. mod_id: patient-level ID
+  2. mod_id_visit: visit-level ID
+  3. event: sample event name
+  4. conc.level: drug concentration level
+  5. mod_id_event: unique identifier for subject, visit, and event number. As an example, this can be created by pasting together "mod_id_visit" with "event".
+  6. date.time (unless provided with sampling time): date-time of concentration sample
+
+If sampling time is provided, it should include the following named columns:
+
+  1. mod_id_event: unique identifier for subject, visit, and event number
+  2. Sample.Collection.Date.and.Time: date-time of sample collection
+
+If `conc.path` and `samp.path` specify data sets that are formatted as described above, then the `conc.select`, `conc.rename`, `conc.mod.list`, and `samp.mod.list` arguments can be ignored (and set to `NULL`). Otherwise they should be used to help create the proper format.
+
 * The `run_DrugLevel` function arguments are as follows:
-    + `samp.path`: file path where the sampling time data exist
-    + `samp.mod.list`: list containing modifications to variables in the sampling time data
-    + `conc.path`: file path where the drug concentration data exist
-    + `conc.select`: list of variables in the drug concentration data, which are used for processing
-    + `conc.rename`: rename variables for the variables in conc.select
+    + `conc.path`: (required) file name of concentration data (CSV, RData, RDS), or data.frame
+    + `conc.select`: list of variables in the drug concentration data, which are used for processing; id (e.g., 'mod_id'), sample event id within each subject id (e.g., 'samp'), and drug concentration (e.g., 'fentanyl_calc_conc') are required to be selected if the data are not in an appropriate form.
+    + `conc.rename`: rename variables for the variables in conc.select; the selected variables should be renamed using 'conc.level' for drug concentration and 'event' for sample event name (e.g., fentanyl_calc_conc = 'conc.level', samp = 'event')
     + `conc.mod.list`: list containing modifications to variables in the drug concentration data
-    + `check.path`: file path where the generated files for data checking are stored, and the corresponding data files with fixed data exist
+    + `samp.path`: (optional) file name of data with sampling time (CSV, RData, RDS), or data.frame; if provided, 'conc.mod.list' and 'samp.mod.list' should be provided to create 'mod_id_event' as shown above (unless provided in each dataset), which will be used to connect the concentration data and the sample data to generate the date-time variable for concentration data
+    + `samp.mod.list`: list containing modifications to variables in the sampling time data
+    + `check.path`: file path to ‘check’ directory, where the generated files for data checking are stored, and the corresponding data files with fixed data exist. The default (NULL) will not produce any check files.
     + `failmiss_fn`: filename stub for missing concentration date check file
     + `multsets_fn`: filename stub for multiple sets of concentration data check file
     + `faildup_fn`: filename stub for duplicate concentration check file
@@ -668,7 +736,7 @@ if (file.exists(ms)) file.remove(ms)
     + `LLOQ`: lower limit of quantification (LLOQ)
          - e.g., dexmedetomidine 0.005 ng/mL, fentanyl 0.05 ng/mL
     + `demo.list`: file name for processed demographic file that is used to exclude subjects based on exclusion criteria
-* The output of the `run_DrugLevel` function is a dataset for processed drug concentration levels (conc.level) matched with date/time (date.time), as well as necessary identification numbers for further merging with the output from other modules.
+* The output of the `run_DrugLevel` function is a dataset for processed drug concentration levels (conc.level) matched with date-time (date.time), as well as necessary identification numbers for further merging with the output from other modules.
 
 ## Pro-Laboratory
 
@@ -689,22 +757,22 @@ str(lab.out)
 ```
 
 * The `run_Labs` function arguments are as follows:
-    + `lab.path`: file path where the laboratory data exist
+    + `lab.path`: filename of a lab file (CSV, RData, RDS), or data.frame
     + `lab.select`: list of variables in the laboratory data to be retained
-    + `lab.mod.list`: list containing modifications to variables in the laboratory data
+    + `lab.mod.list`: list of expressions giving modifications to make to variables in the laboratory data; passed to `dataTransformation`
 
 ## Build-PK-IV
 
-The Build-PK-IV module creates PK data for IV medications. Both dose data from the *Pro-Med-Str1* module and concentration data from the *Pro-DrugLevel* module are required. Demographic data from the *Pro-Demographic* module and laboratory data from the *Pro-Laboratory* module may optionally be included. The module is semi-interactive; it generates several files to check potential data errors, and get feedback from an investigator. If corrected information (‘fix’ files) are provided, the module should be re-run to incorporate the corrections. The major functions this module performs are:
+The Build-PK-IV module creates PK data for IV medications. Both dose data from the *Pro-Med-Str1* module and concentration data from the *Pro-DrugLevel* module are required. Demographic data from the *Pro-Demographic* module and laboratory data from the *Pro-Laboratory* module may optionally be included. Each dataset including dose and concentration datasets can be provided by users without being generated by our modules as long as they are a correctly formatted data.frame. This module can be semi-interactive for data checking (although it is not required, we recommend using this feature); if `check.path` is provided (the default is NULL), it can generate several files to check potential data errors, and get feedback from an investigator. If corrected information (‘fix’ files) are provided, the module should be re-run to incorporate the corrections. The major functions this module performs are:
 
 * Determine whether each IV dose is valid by comparing to concentration data. Doses outside the time frame window defined by concentration data (by default seven days before first concentration through last concentration) are dropped. See `pkdata::trimDoses()` for more information.
 
 * Resolve duplicate doses. A file with duplicate bolus dose records, if any, will be produced using the `faildupbol_fn` stub appended with drugname. A ‘fix’ file can be added to correct these records.
      + e.g., if `faildupbol_fn` is 'DuplicateBolus-', the file 'failDuplicateBolus-fent.csv' will be created in the `check.path` directory. The corrected file should replace 'fail' with 'fix' (e.g., 'fixDuplicateBolus-fent.csv'), and include an additional variable called 'flag' with the value 'keep' for the records to be retained.
 
-* Add zero dose values after a gap.
+* Add zero dose values (i.e., impute stopping time for a continuous infusion) and (conceptually) impute missing records if ‘gap’ is provided in `dose.columns`. This allows a continuous infusion given when there are missing records between infusion dosing records. For example, suppose that ‘gap’ = 60 is defined (which is typical gap size when infusion dosing is supposed to be recorded hourly for inpatients) and time between two records (i.e., gap) are greater than 1 hour (i.e., missing record). If the gap between the two records is less or equal to twice of the gap (i.e., 2 $\times$ 60 = 120 min), a continuous infusion is assumed until the 2nd dose record; otherwise, the first infusion is assumed to be stopped (i.e., add zero doses) after 60 min (i.e., equal to the gap size) and a new infusion (the 2nd record) starts at its recorded time. Both infuse.time.real and infuse.time are used to impute stopping time for a continuous infusion based on 'gap' if it is provided in the dose data, while infuse.time.real is used to generate 'time' variable in the processed data. Note that if no `gap` variable is set, no additional (zero dose) rows will be created (as `addZeroDose` is the function (internal function) that adds a stopping dose).
 
-* If demographic data is provided, update the 'maxint' value.
+     Often the gap variable will be defined by the previous function, `run_MedStr1`. The user may also choose to set their own gap variable with appropriate recording interval. In most settings, the gap variable is unnecessary. For example of Vanderbilt University Medical Center, after *Epic* EHR system was implemented, only MAR data are collected without flow sheet data, which have infusion data recorded with any time intervals, and hence `maxint` should not be set for 'gap' in `dose.columns` argument of `run_Build_PK_IV` function.
 
 * Combine dose and concentration data into PK data format.
 
@@ -715,29 +783,33 @@ The Build-PK-IV module creates PK data for IV medications. Both dose data from t
 
 * The final PK data includes ID and standard NONMEM formatted variables:
   + time - time of dosing or concentration event
-  + conc - observed concentration (NA for dosing records)
   + amt - dose amount administered (NA for concentration records)
+  + dv - dependent variable; i.e., observed concentration (NA for dosing records)
   + rate - rate of drug administration (e.g., rate=0 for bolus doses)
   + mdv - missing dependent variable (dv) indicator (e.g., 0 = not missing dv, 1 = missing dv)
-  + evid - event ID (e.g., 0 = observation, 1 = dose event)
+  + evid - event indicator (e.g., 0 = observation, 1 = dose event)
   
-If demographic data is provided, the demographic variables named in `demo.vars` will also be included and renamed according to `demo.abbr`.
+If demographic data is provided, the demographic variables will also be included. 
+
+If `pk.vars` includes ‘date’, the output generates its original date-time to which the ‘time’ is mapped. Users can use `pk.vars` to include variables for demographics or labs that are already merged with the concentration dataset when they prefer to provide a single concentration data file (required). But a separate dose data file is still required.
 
 PK data with IV dosing can be built by the `run_Build_PK_IV` function using: 
 
 ```{r Build-PK-IV, eval=FALSE}
-pk_dat <- run_Build_PK_IV(conc=conc.out,
+pk_dat <- run_Build_PK_IV(
+    conc=conc.out,
+    conc.columns = list(id = 'mod_id', datetime = 'date.time', druglevel = 'conc.level', 
+                        idvisit = 'mod_id_visit'),
     dose=ivdose.out,
-    demo.list=demo.out,
-    demo.vars=c('weight', 'weight_demo', 'height', 'gender',
-                'ageatsurgery', 'stat_sts', 'cpb_sts',
-                'length_of_icu_stay'),
-    demo.abbr=c('wgt', 'wgt_demo', 'height', 'gender',
-                'age', 'stat', 'cpb', 'loi'),
-    lab.dat = lab.out,
-    lab.vars = c('creat','alb'),
-    pk.vars=c('mod_id_visit', 'time', 'conc', 'dose', 'rate', 'event',
-              'other', 'multiple.record', 'date', 'mod_id'),
+    dose.columns = list(id = 'mod_id', date = 'date.dose', infuseDatetime = 'infuse.time', 
+                        infuseDose = 'infuse.dose', infuseTimeExact= 'infuse.time.real',
+                        bolusDatetime = 'bolus.time', bolusDose = 'bolus.dose', 
+                        gap = 'maxint', weight = 'weight'),
+    demo.list = demo.out,
+    demo.columns = list(id = 'mod_id', idvisit = 'mod_id_visit'),
+    lab.list = lab.out,
+    lab.columns = list(id = 'mod_id', datetime = 'date.time'),
+    pk.vars=c('date'),
     drugname=drugname,
     check.path=checkDir,
     missdemo_fn='-missing-demo',
@@ -748,18 +820,18 @@ pk_dat <- run_Build_PK_IV(conc=conc.out,
 
 ```{r Build-PK-IV-fake, echo=FALSE}
 co({
-pk_dat <- run_Build_PK_IV(conc=conc.out,
+pk_dat <- run_Build_PK_IV(
+    conc=conc.out,
+    conc.columns = list(id = 'mod_id', datetime = 'date.time', druglevel = 'conc.level', 
+                        idvisit = 'mod_id_visit'),
     dose=ivdose.out,
-    demo.list=demo.out,
-    demo.vars=c('weight', 'weight_demo', 'height', 'gender',
-                'ageatsurgery', 'stat_sts', 'cpb_sts',
-                'length_of_icu_stay'),
-    demo.abbr=c('wgt', 'wgt_demo', 'height', 'gender',
-                'age', 'stat', 'cpb', 'loi'),
-    lab.dat = lab.out,
-    lab.vars = c('creat','alb'),
-    pk.vars=c('mod_id_visit', 'time', 'conc', 'dose', 'rate', 'event',
-              'other', 'multiple.record', 'date', 'mod_id'),
+    dose.columns = list(id = 'mod_id', date = 'date.dose', infuseDatetime = 'infuse.time', 
+                        infuseDose = 'infuse.dose', infuseTimeExact= 'infuse.time.real',  bolusDatetime = 'bolus.time', bolusDose = 'bolus.dose', gap = 'maxint', weight = 'weight'),
+    demo.list = demo.out,
+    demo.columns = list(id = 'mod_id', idvisit = 'mod_id_visit'),
+    lab.list = lab.out,
+    lab.columns = list(id = 'mod_id', datetime = 'date.time'),
+    pk.vars=c('date'),
     drugname=drugname,
     check.path=checkDir,
     missdemo_fn='-missing-demo',
@@ -779,16 +851,17 @@ head(pk_dat)
 ```
 
 * The `run_Build_PK_IV` function arguments are as follows:
-    + `conc`: concentration data output from run_DrugLevel (required)
-    + `dose`: IV dose data output from run_MedStrI (required)
-    + `demo.list`: (optional) file name for processed demographic file
-    + `demo.vars`: (optional) vector of demographic variables to include in final output
-    + `demo.abbr`: (optional) vector of abbreviations for demographic variables in `demo.vars`
-    + `lab.dat`: (optional) list containing processed laboratory files
-    + `lab.vars`: (optional) vector containing names for laboratory files
-    + `pk.vars`: PK variables to include
-    + `drugname`: drug name stub (e.g., fent)
-    + `check.path`: file path where the generated files for data checking are stored, and the corresponding data files with fixed data exist
+    + `conc`: (required) drug concentration data output from `run_DrugLevel`, or a correctly formatted data.frame
+    + `conc.columns`: (required) a named list that should specify columns in concentration data; ‘id’, ‘datetime’, ‘druglevel’ are required. ‘idvisit’ may also be specified. ‘datetime’ is date and time for concentration measurement, which can refer to a single date-time variable (datetime = ‘date_time’) or two variables holding date and time separately (e.g., datetime = c(‘Date’, ‘Time’)). ‘idvisit’ can be used when there are multiple visits (i.e., several occasions) for the same subject. if both ‘id’ and ‘idvisit’ are provided, ‘idvisit’ will be generated. 
+    + `dose`: (required) IV dose data output from `run_MedStrI`, or a correctly formatted data.frame
+    + `dose.columns`: (required) a named list that should specify columns in dose data; ‘id’ is required. ‘infuseDatetime’ and ‘infuseDose’ should be set if infusion dose data is present. ‘infuseTimeExact’ may also be specified for infusion data – this variable represents a precise time, if for example the ‘infuseDatetime’ variable is rounded. ‘bolusDatetime’ and ‘bolusDose’ should be set if bolus dose data is present. A generic ‘date’ variable may be provided, agnostic to either infusion or bolus dosing. ‘gap’ and ‘weight’ column names may also be set. Any of the date-time variables can be specified as a single date-time variable (infuseDatetime = ‘date_time’) or two variables holding date and time separately (e.g., infuseDatetime = c(‘Date’, ‘Time’)). For details of the utility for ‘gap’, see above.
+    + `demo.list`: (optional) demographic data, containing processed output from from `run_Demo`, or a correctly formatted data.frame
+    + `demo.columns`: a named list that should specify columns in demographic data; ‘id’ is required. ‘weight’ and ‘idvisit’ may also be used to specify columns for weight or the unique idvisit. ‘idvisit’ can be used when there are multiple visits (i.e., several occasions) for the same subject. Any other columns present in the demographic data are treated as covariates.
+    + `lab.list`: (optional) laboratory data, containing processed output from `run_Labs`, or a correctly formatted list
+    + `lab.columns`: a named list that should specify columns in lab data; ‘id’, and ‘datetime’ are required. ‘datetime’ is the date and time when the lab data was obtained, which can refer to a single date-time variable (datetime = ‘date_time’) or two variables holding date and time separately (e.g., datetime = c(‘Date’, ‘Time’)). Any other columns present in lab data are treated as lab values.
+    + `pk.vars`: (optional) variables to include in the returned PK data. The variable ‘date’ is a special case; when included, it maps the ‘time’ offset to its original date-time. Other named variables will be merged from the concentration data set. For example, rather than being separate data sets, labs or demographics may already be present in the concentration data. These columns should be named here.
+    + `drugname`: (optional) drug name stub (e.g., fent)
+    + `check.path`: (optional) file path where the generated files for data checking are stored, and the corresponding data files with fixed data exist
     + `missdemo_fn`: filename stub for report of missingness frequency and percent for variables
     + `faildupbol_fn`: filename stub for duplicate bolus dose records
     + `date.format`: date and time format  (e.g., "%m/%d/%y %H:%M:%S")

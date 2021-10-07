@@ -1,11 +1,13 @@
 ---
 title: "EHR Vignette for *Extract-Med* and *Pro-Med-NLP*"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{1. EHR Vignette for Extract-Med and Pro-Med-NLP}
-  %\VignetteEngine{knitr::rmarkdown}
-  \usepackage[utf8]{inputenc}
+output: rmarkdown::pdf_document
 ---
+
+<!--
+%\VignetteEngine{knitr::rmarkdown}
+%\VignetteIndexEntry{1. EHR Vignette for Extract-Med and Pro-Med-NLP}
+%\VignetteEncoding{UTF-8}
+-->
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -162,8 +164,6 @@ The lamotrigine results can be immediately put into the `parse` step of the Pro-
 write.csv(tac_mxr, file='tac_mxr.csv', row.names=FALSE)
 write.csv(lam_mxr, file='lam_mxr.csv', row.names=FALSE)
 ```
-
-
 
 ### Tuning the medExtractR system  
 
@@ -477,12 +477,15 @@ collapseDose(x, noteMetaData, naFreq = 'most', ...)
 
 The main function underlying `collapseDose` is `makeDose`, which standardizes entities, imputes missing values, calculates dose intake and daily dose, removes redundancies, and generates the final dose data. Two `data.frames` are generated from the `makeDose` function, one with redundancies removed at the note level and one at the date level (see McNeer et al. (2020) for details). The `collapseDose` function serves as a wrapper to `makeDose` to ensure results are collated and formatted properly for analysis.
 
-
 #### Running `collapseDose`
 
 For our tacrolimus example above, the output of this function is below. Note that we use the output from `addLastDose` rather than directly from `buildDose`.
 
-```{r}
+```{r, eval = FALSE}
+tac_part_ii <- collapseDose(tac_part_i_out_lastdose, tac_metadata, naFreq = 'most')
+```
+
+```{r, echo = FALSE, warning = FALSE}
 suppressWarnings(tac_part_ii <- collapseDose(tac_part_i_out_lastdose, tac_metadata, naFreq = 'most'))
 ```
 
@@ -497,10 +500,14 @@ Date level collapsing:
 tac_part_ii$date
 ```
 
-
 Below, we demonstrate `collapseDose` using our lamotrigine example. In the function call, we supply an additional argument `'xr|er'` to indicate that we want to separately consider extended release formulations of lamotrigine, (usually denoted by "XR" or "ER"). This prevents regular lamotrigine mentions from being collapsed with lamotrigine XR mentions, even if the dosage is identical.
 
-```{r}
+```{r, eval = FALSE}
+data(lam_metadata, package = 'EHR')
+lam_part_ii <- collapseDose(lam_part_i_out, lam_metadata, naFreq = 'most', 'xr|er')
+```
+
+```{r, echo = FALSE, warning = FALSE}
 data(lam_metadata, package = 'EHR')
 suppressWarnings(lam_part_ii <- collapseDose(lam_part_i_out, lam_metadata, naFreq = 'most', 'xr|er'))
 ```

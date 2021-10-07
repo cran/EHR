@@ -7,15 +7,13 @@
 \alias{daysDiff}
 \alias{minDiff}
 \alias{fixDates}
-\alias{combine}
+\alias{joinFlowMar}
 \alias{updateInterval_mod}
 \alias{fix_serum_time}
 \alias{merge_by_time}
 \alias{merge_inf_bolus}
 \alias{addZeroDose}
 \alias{pkdata}
-\alias{parse_dates}
-\alias{guessDateFormat}
 \title{Internal functions for pk analysis}
 \description{
 code{takeClosest}: take value at nearest time
@@ -29,7 +27,7 @@ code{minDiff}: difference (in minutes) of time vector
 
 code{fixDates}: add leading zeroes to date
 
-code{combine}: rbind two data sets (GIVE DIFFERENT NAME)
+code{joinFlowMar}: rbind two data sets
 
 code{updateInterval_mod}: replace maxint with difference between surgery time
 and infusion time (if smaller than maxint)

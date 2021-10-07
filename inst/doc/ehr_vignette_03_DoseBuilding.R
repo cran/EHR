@@ -83,8 +83,11 @@ tac_metadata <- bmd(tac_mxr_part1_out[['filename']])
 ## ----echo=FALSE---------------------------------------------------------------
 tac_metadata[c(51,55,104,105),]
 
-## ----message=FALSE------------------------------------------------------------
-tac_part2 <- collapseDose(tac_mxr_part1_out, tac_metadata, naFreq='most')
+## ---- eval = FALSE------------------------------------------------------------
+#  tac_part2 <- collapseDose(tac_mxr_part1_out, tac_metadata, naFreq='most')
+
+## ---- echo = FALSE, message = FALSE-------------------------------------------
+suppressWarnings(tac_part2 <- collapseDose(tac_mxr_part1_out, tac_metadata, naFreq='most'))
 
 ## ----echo=FALSE---------------------------------------------------------------
 cat(breaktable(tac_part2$note[c(40,42,68,69),], c(7,12)))
@@ -110,7 +113,52 @@ tac_gs_part2_date <- read.csv(
 ## ----echo=FALSE---------------------------------------------------------------
 tac_gs_part2_date[c(29,42),]
 
-## -----------------------------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
+#  precall <- function(dat, gs) {
+#    tp1 <- sum(dat %in% gs)
+#    fp1 <- sum(!(dat %in% gs))
+#    fn1 <- sum(!(gs %in% dat))
+#    r1 <- c(tp1, tp1 + fn1)
+#    p1 <- c(tp1, tp1 + fp1)
+#    r <- rbind(r1,p1)
+#    dimnames(r) <- list(c('recall','prec'), c('num','den'))
+#    cbind(r, prop = round(r[,1] / r[,2], 2))
+#  }
+#  
+#  metaData <- bmd(unique(tac_gs_part1$filename))
+#  tacxr <- collapseDose(tac_gs_part1, metaData, 'bid')
+#  tacxr.note <- tacxr[['note']]
+#  tacxr.date <- tacxr[['date']]
+#  
+#  tacxr.note$pid <- sub("_.*","",tacxr.note$filename)
+#  tacxr.date$pid <- sub("_.*","",tacxr.date$filename)
+#  tac_gs_part2_note$pid <- sub("_.*","",tac_gs_part2_note$filename)
+#  tac_gs_part2_date$pid <- sub("_.*","",tac_gs_part2_date$filename)
+#  
+#  tacxrrow.note.intake <- do.call(paste, c(tacxr.note[,c('pid','dose.intake',
+#                                                         'dosechange')],sep = '|'))
+#  tacxrrow.note.daily <- do.call(paste, c(tacxr.note[,c('pid','intaketime','dose.daily',
+#                                                        'dosechange')], sep = '|'))
+#  tacxrrow.date.intake <- do.call(paste, c(tacxr.date[,c('pid','dose.intake',
+#                                                         'dosechange')], sep = '|'))
+#  tacxrrow.date.daily <- do.call(paste, c(tacxr.date[,c('pid','intaketime','dose.daily',
+#                                                        'dosechange')], sep = '|'))
+#  
+#  gs.tacxrrow.note.intake <- do.call(paste, c(tac_gs_part2_note[,c('pid','doseintake',
+#                                                                   'dosechange')], sep = '|'))
+#  gs.tacxrrow.note.daily <- do.call(paste, c(tac_gs_part2_note[,c('pid','intaketime','daily',
+#                                                                  'dosechange')], sep = '|'))
+#  gs.tacxrrow.date.intake <- do.call(paste, c(tac_gs_part2_date[,c('pid','doseintake',
+#                                                                   'dosechange')], sep = '|'))
+#  gs.tacxrrow.date.daily <- do.call(paste, c(tac_gs_part2_date[,c('pid','intaketime','daily',
+#                                                                  'dosechange')], sep = '|'))
+#  
+#  precall(tacxrrow.note.intake, gs.tacxrrow.note.intake)
+#  precall(tacxrrow.note.daily, gs.tacxrrow.note.daily)
+#  precall(tacxrrow.date.intake, gs.tacxrrow.date.intake)
+#  precall(tacxrrow.date.daily, gs.tacxrrow.date.daily)
+
+## ---- echo = FALSE, warning = FALSE-------------------------------------------
 precall <- function(dat, gs) {
   tp1 <- sum(dat %in% gs)
   fp1 <- sum(!(dat %in% gs))
@@ -123,7 +171,7 @@ precall <- function(dat, gs) {
 }
 
 metaData <- bmd(unique(tac_gs_part1$filename))
-tacxr <- collapseDose(tac_gs_part1, metaData, 'bid')
+suppressWarnings(tacxr <- collapseDose(tac_gs_part1, metaData, 'bid'))
 tacxr.note <- tacxr[['note']]
 tacxr.date <- tacxr[['date']]
 

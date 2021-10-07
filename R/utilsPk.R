@@ -10,7 +10,7 @@
 #'
 #' code{fixDates}: add leading zeroes to date
 #'
-#' code{combine}: rbind two data sets (GIVE DIFFERENT NAME)
+#' code{joinFlowMar}: rbind two data sets
 #'
 #' code{updateInterval_mod}: replace maxint with difference between surgery time
 #' and infusion time (if smaller than maxint)
@@ -26,68 +26,11 @@
 #' code{pkdata}
 #'
 #' @name pk-internal
-#' @aliases takeClosest takeClosestTime daysDiff minDiff fixDates combine
+#' @aliases takeClosest takeClosestTime daysDiff minDiff fixDates joinFlowMar
 #' updateInterval_mod fix_serum_time merge_by_time merge_inf_bolus
-#' addZeroDose pkdata parse_dates guessDateFormat
+#' addZeroDose pkdata
 #' @keywords internal
 NULL
-
-# guessDateFormat <- pkdata::guessDateFormat
-# parse_dates <- pkdata::parse_dates
-
-# guessDateFormat <- function(x) {
-#   x1 <- x
-#   if (!inherits(x1[1], "character")) {
-#     x1 <- as.character(x1)
-#   }
-#   x1[x1 == ""] <- NA
-#   x1 <- x1[!is.na(x1)]
-#   if (length(x1) == 0) return(NA)
-#   dateTimes <- do.call(rbind, strsplit(x1, " "))
-#   for (i in ncol(dateTimes)) {
-#     dateTimes[dateTimes[, i] == "NA"] <- NA
-#   }
-#   hasColon <- function(string) any(grepl(':', string))
-#   timePart <- which(apply(dateTimes, MARGIN = 2, hasColon))
-#   datePart <- setdiff(seq(ncol(dateTimes)), timePart)
-#   if (length(timePart) > 1 || length(datePart) != 1) 
-#     stop("cannot parse your time variable")
-#   timeFormat <- NA
-#   if (length(timePart)) {
-#     tp <- dateTimes[, timePart]
-#     tp <- tp[!is.na(tp)]
-#     ncolons <- max(nchar(gsub("[^:]", "", tp)))
-#     if (ncolons == 1) {
-#       timeFormat <- "HM"
-#     } else if (ncolons == 2) {
-#       timeFormat <- "HMS"
-#     } else stop("timePart should have 1 or 2 colons")
-#   }
-#   dp <- gsub('[^0-9]', '', dateTimes[, datePart])
-#   dates <- dp[!is.na(dp) & nchar(dp) > 0]
-#   fmtOpts <- c('ymd', 'mdy', 'dmy')
-#   nbad <- function(dx, fmt) sum(is.na(lubridate::parse_date_time(dates, orders = fmt, quiet = TRUE)))
-#   badcnts <- vapply(fmtOpts, nbad, numeric(1), dx = dates)
-#   dateFormat <- fmtOpts[which.min(badcnts)]
-#   if (is.na(timeFormat)) {
-#     format <- dateFormat
-#   } else if (timePart == 1) {
-#     format <- paste0(timeFormat, '_', dateFormat)
-#   } else if (timePart == 2) {
-#     format <- paste0(dateFormat, '_', timeFormat)
-#   } else stop("cannot parse your time variable")
-#   format
-# }
-# 
-# parse_dates <- function(x, tz = 'America/Chicago') {
-#   if(inherits(x, "POSIXct")) return(x)
-#   fmt <- guessDateFormat(x)
-#   res <- lubridate::parse_date_time(x, orders = fmt, tz = tz, truncated = 2)
-#   if(!grepl("_", fmt)) {
-#     res <- as.Date(res)
-#   }
-#   res
-# }
 
 takeClosest <- function(time, times, values) {
     dat <- data.frame(times, values)
@@ -120,7 +63,7 @@ fixDates <- function(x) {
   sub('^([0-9]{2}/[0-9]{2}/)([0-9]{2})(?![0-9])', '\\120\\2', d, perl = TRUE)
 }
 
-combine <- function(x, y) {
+joinFlowMar <- function(x, y) {
   y[,setdiff(names(x), names(y))] <- NA
   x <- rbind(x, y[,names(x)])
   names(x) <- c('mod_id', 'date.time', 'infuse.dose', 'unit', 'rate', 'weight', 'maxint')
@@ -130,14 +73,15 @@ combine <- function(x, y) {
 }
 
 updateInterval_mod <- function(inf, demo) {
-  # first three columns of demo should be: id|date|time
+  # first two columns of demo should be: id|datetime
   # first column of inf should be: id
   demo <- demo[complete.cases(demo),]
   # add leading zeroes
-  date <- fixDates(demo[,2])
-  time <- sub("^([0-9]{2})([0-9]{2})$", "\\1:\\2", sprintf("%04d", demo[,3]))
-  dt <- paste(date, time)
-  surg.time <- parse_dates(dt)
+#   date <- fixDates(demo[,2])
+#   time <- sub("^([0-9]{2})([0-9]{2})$", "\\1:\\2", sprintf("%04d", demo[,3]))
+#   dt <- paste(date, time)
+#   surg.time <- pkdata::parse_dates(dt)
+  surg.time <- demo[,2]
   dsid <- inf[,1]
   ids <- unique(dsid)
   ids <- ids[!is.na(ids)] # drop if id==NA
@@ -163,7 +107,7 @@ fix_serum_time <- function(y) {
   # add leading zeroes
   date <- fixDates(y[,'date'])
   dt <- paste(date, y[,'time'])
-  y[,'date.time'] <- parse_dates(dt)
+  y[,'date.time'] <- pkdata::parse_dates(dt)
   y
 }
 
@@ -178,10 +122,10 @@ merge_by_time <- function(x, y, select=c(), maxTime=168, x.id='id', y.id='study_
   x[,setdiff(select, colX)] <- NA
   # convert to date-time if necessary
   if(!inherits(x[,x.time], 'POSIXt')) {
-    x[,x.time] <- parse_dates(x[,x.time])
+    x[,x.time] <- pkdata::parse_dates(x[,x.time])
   }
   if(!inherits(y[,y.time], 'POSIXt')) {
-    y[,y.time] <- parse_dates(y[,y.time])
+    y[,y.time] <- pkdata::parse_dates(y[,y.time])
   }
   # merge by ID and closest date (within maxTime hours)
   uid <- unique(x[,x.id])
@@ -214,6 +158,7 @@ merge_inf_bolus <- function(inf.info, y) {
   hasInfusion <- nrow(inf.info) > 0
   hasBolus <- nrow(y) > 0
   if(hasInfusion) {
+    names(inf.info)[1] <- 'mod_id'
     inf.info$date.dose <- format(inf.info$date.time, "%Y-%m-%d")
     inf.info$infuse.time <- format(inf.info$date.time, "%H:%M")
     inf.info$bolus.time <- NA
@@ -223,9 +168,8 @@ merge_inf_bolus <- function(inf.info, y) {
   }
 
   if(hasBolus) {
-    names(y) <- c('mod_id', 'date.dose', 'bolus.time', 'bolus.dose', 'medroute')
-    bol.info <- y[!is.na(y$mod_id) & !is.na(y$date.dose) & !is.na(y$bolus.dose),]
-    bol.info$date.time <- parse_dates(paste(bol.info$date.dose, bol.info$bolus.time))
+    names(y) <- c('mod_id', 'date.time', 'bolus.dose')
+    bol.info <- y[complete.cases(y),]
     bol.info$date.dose <- format(bol.info$date.time, "%Y-%m-%d")
     bol.info$bolus.time <- format(bol.info$date.time, '%H:%M')
     bol.info$infuse.time <- NA
@@ -266,11 +210,11 @@ addZeroDose <- function(doseData, infusionDoseTimeVar=NULL, infusionDoseVar=NULL
     rtcol <- match(rtname, columnNames1)
     if(is.null(rtcol)) stop("real time column is not present")
     ocols <- setdiff(columnNames1, c(idVar,dateVar,rtname,infusionDoseTimeVar,gapVar))
-    doseData[,'dosetime123'] <- parse_dates(doseData[,infusionDoseTimeVar])
-    doseData[,'dosetimereal123'] <- parse_dates(doseData[,rtcol])
-    fmt1 <- guessDateFormat(doseData[,dateVar])
-    fmt2 <- guessDateFormat(doseData[,rtcol])
-    fmt3 <- guessDateFormat(doseData[,infusionDoseTimeVar])
+    doseData[,'dosetime123'] <- pkdata::parse_dates(doseData[,infusionDoseTimeVar])
+    doseData[,'dosetimereal123'] <- pkdata::parse_dates(doseData[,rtcol])
+    fmt1 <- pkdata::guessDateFormat(doseData[,dateVar])
+    fmt2 <- pkdata::guessDateFormat(doseData[,rtcol])
+    fmt3 <- pkdata::guessDateFormat(doseData[,infusionDoseTimeVar])
 #     fmt1 <- '%Y-%m-%d'
 #     fmt2 <- '%Y-%m-%d %H:%M:%S'
 #     fmt3 <- '%Y-%m-%d %H:%M:%S'
@@ -369,18 +313,18 @@ pkdata <- function(doseData, drugLevelData, doseIdVar = "id",
     }
     # given the min of each time variable, determine the first/origin
     # originally, defaulted time to drug level time - we never want this to occur
-    # init.time <- min(guessDateFormat(y[,dltv], TRUE), na.rm=TRUE)
+    # init.time <- min(pkdata::guessDateFormat(y[,dltv], TRUE), na.rm=TRUE)
     init.time <- NA
     if(!noInfusion && !all(is.na(x[,rtcol]))) {
-        init.time <- min(parse_dates(x[,rtcol]), na.rm=TRUE)
+        init.time <- min(pkdata::parse_dates(x[,rtcol]), na.rm=TRUE)
     }
     if(!noBolus && !all(is.na(x[,bolusDoseTimeVar]))) {
-        if(all(is.na(init.time))) init.time <- min(parse_dates(x[,bolusDoseTimeVar]), na.rm=TRUE)
-        else init.time <- append(init.time, min(parse_dates(x[,bolusDoseTimeVar]), na.rm=TRUE))
+        if(all(is.na(init.time))) init.time <- min(pkdata::parse_dates(x[,bolusDoseTimeVar]), na.rm=TRUE)
+        else init.time <- append(init.time, min(pkdata::parse_dates(x[,bolusDoseTimeVar]), na.rm=TRUE))
     }
     if(!noOther && !all(is.na(x[,otherDoseTimeVar]))) {
-        if(all(is.na(init.time))) init.time <- min(parse_dates(x[,otherDoseTimeVar]), na.rm=TRUE)
-        else init.time <- append(init.time, min(parse_dates(x[,otherDoseTimeVar]), na.rm=TRUE))
+        if(all(is.na(init.time))) init.time <- min(pkdata::parse_dates(x[,otherDoseTimeVar]), na.rm=TRUE)
+        else init.time <- append(init.time, min(pkdata::parse_dates(x[,otherDoseTimeVar]), na.rm=TRUE))
     }
     if(all(is.na(init.time))) stop("Unable to find starting date, are all dates NA?")
     init.time <- min(init.time, na.rm=TRUE)
@@ -399,15 +343,16 @@ pkdata <- function(doseData, drugLevelData, doseIdVar = "id",
         gapv <- match(intervalVar, columnNames1)
         # subset on non-missing infusion dose and times
         dose.info <- x[!is.na(x[,rtcol]) & !is.na(x[,idv]),]
-        if(nrow(dose.info) > 0) {
-            real.time <- parse_dates(dose.info[,rtcol])
+        nr_di <- nrow(dose.info)
+        if(nr_di > 0) {
+            real.time <- pkdata::parse_dates(dose.info[,rtcol])
             # find hourly time difference between real.time and init.time
             dose.info$time <- as.numeric(difftime(real.time, init.time), units='hours')
             # re-order by time
             dose.info <- dose.info[order(dose.info$time),]
             # indicator for change in dosage
             changeIndexStart <- c(1, which(abs(diff(dose.info[,idv])) > 0.0001)+1)
-            changeIndexEnd <- c(which(abs(diff(dose.info[,idv])) > 0.0001), nrow(dose.info))
+            changeIndexEnd <- c(which(abs(diff(dose.info[,idv])) > 0.0001), nr_di)
             changeIndex <- changeIndexStart
             dose.info[changeIndex, 'change'] <- 1
             infuse.data <- data.frame(id=dose.info[changeIndex, idcol], date=real.time[changeIndex],
@@ -422,14 +367,15 @@ pkdata <- function(doseData, drugLevelData, doseIdVar = "id",
                 # calculate dose based on rate times length on dose
                 gap <- 1
                 if(length(gapv)) {
-                  gap <- dose.info[nrow(dose.info), gapv]/60
+                  gap <- dose.info[nr_di, gapv]/60
                 }
-                infuse.data$dose <- infuse.data$rate * diff(c(infuse.data$time, dose.info[nrow(dose.info), "time"]+gap))
+                infuse.data$dose <- infuse.data$rate * diff(c(infuse.data$time, dose.info[nr_di, "time"]+gap))
             }
             # calculate skips/imputed for each range between dose change
             if('skips' %in% columnNames1) {
-                for(i in seq(nrow(infuse.data))) {
-                    if(i < nrow(infuse.data)) {
+                nr_id <- nrow(infuse.data)
+                for(i in seq(nr_id)) {
+                    if(i < nr_id) {
                         tmp <- dose.info[dose.info[,'time'] >= infuse.data$time[i] & dose.info[,'time'] < infuse.data$time[i+1], 'skips']
                     } else {
                         tmp <- dose.info[dose.info[,'time'] >= infuse.data$time[i], 'skips']
@@ -477,7 +423,7 @@ pkdata <- function(doseData, drugLevelData, doseIdVar = "id",
         dose.info <- x[!is.na(x[,bdtv]) & !is.na(x[,bdv]),]
         if(nrow(dose.info) > 0) {
             # find hourly time difference
-            dose.info$time <- as.numeric(difftime(parse_dates(dose.info[,bdtv]), init.time), units='hours')
+            dose.info$time <- as.numeric(difftime(pkdata::parse_dates(dose.info[,bdtv]), init.time), units='hours')
             bolus.data <- data.frame(id=dose.info[, idcol], date=dose.info[, bdtv], time=dose.info$time,
                 rate=0, dose=dose.info[, bdv], conc=NA, event=1, other=0, skip1=0, skip2=0, skip3=0, skip4more=0, multiple.record=0, stringsAsFactors=FALSE
             )
@@ -494,7 +440,7 @@ pkdata <- function(doseData, drugLevelData, doseIdVar = "id",
         dose.info <- x[!is.na(x[,odtv]) & !is.na(x[,odv]),]
         if(nrow(dose.info) > 0) {
             # find hourly time difference
-            dose.info$time <- as.numeric(difftime(parse_dates(dose.info[,odtv]), init.time), units='hours')
+            dose.info$time <- as.numeric(difftime(pkdata::parse_dates(dose.info[,odtv]), init.time), units='hours')
             other.data <- data.frame(id=dose.info[, idcol], date=dose.info[, odtv], time=dose.info$time,
                 rate=0, dose=dose.info[, odv], conc=NA, event=1, other=1, skip1=0, skip2=0, skip3=0, skip4more=0, multiple.record=0, stringsAsFactors=FALSE
             )
@@ -508,7 +454,7 @@ pkdata <- function(doseData, drugLevelData, doseIdVar = "id",
         # throw out zero dose records
         other.data <- other.data[other.data$dose != 0,]
     }
-    drug.data.dt <- parse_dates(y[, dltv])
+    drug.data.dt <- pkdata::parse_dates(y[, dltv])
     # create drug level pk data frame
     # set rate/dose/event to zero; find concentration
     pid <- x[1,idcol]
