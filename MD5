@@ -1,4 +1,4 @@
-3d88cba2c6a0307a36dbe2af4034086e *DESCRIPTION
+64722333a8bc112a0d3fcbf1b582257e *DESCRIPTION
 ff7cc4c4859ab35985e317033f470400 *NAMESPACE
 3fb7783e64e57f8acdd56b37c25429df *R/EHR-package.R
 d6cebc07f95c2015b6efb40110755ab5 *R/Logistf.R
@@ -46,7 +46,7 @@ f27cf2ccad79b89f65b2d70c9a18652e *R/utilsMod.R
 8b972265d22bb126e71995a77ef19164 *R/utilsParse.R
 ba6ab5a98ce2f80e683e6d8676cdbcca *R/utilsPk.R
 73a1565fa6a6a5f1db8da9b2494be76f *R/zeroOneTable.R
-10a31dba229fa446d76292feef9aedb9 *build/vignette.rds
+b0d74e39cf32717f963390a9b6383cee *build/vignette.rds
 f848d61b8623264c8be1bd43ae42c6c2 *data/dataPheWAS.RData
 e02775f6531dd72534b5164e3776cbcc *data/dataPheWASsmall.RData
 d8f9ad518af36be1dc3426a126edd409 *data/lam_metadata.RData
@@ -56,16 +56,16 @@ d8f9ad518af36be1dc3426a126edd409 *data/lam_metadata.RData
 633b5f9c882e691ae0b405284501f45b *data/tac_mxr_parsed.RData
 af21044a1258a35d9243c7fafcce1b88 *inst/doc/ehr_vignette_01_mxr.R
 b0c4d45f41d5b7ec46802b276305ebc6 *inst/doc/ehr_vignette_01_mxr.Rmd
-139a634823a516a7e40161832adb12bc *inst/doc/ehr_vignette_01_mxr.pdf
+bc0ebabff39547dc2342b16522cb28e4 *inst/doc/ehr_vignette_01_mxr.pdf
 56ce58f63606769235a0923a840002cf *inst/doc/ehr_vignette_02_str.R
 073c9e675c65c73f5bef9d619075801e *inst/doc/ehr_vignette_02_str.Rmd
-b9cd21f0cbbb347410890d7b835532e2 *inst/doc/ehr_vignette_02_str.pdf
+66a6b9b1c12f1e653121f9af159f932b *inst/doc/ehr_vignette_02_str.pdf
 b184216b9952935e3e49d91b383509c7 *inst/doc/ehr_vignette_03_DoseBuilding.R
 1aef05a884a26741621b261520fc1cab *inst/doc/ehr_vignette_03_DoseBuilding.Rmd
-4747f7bf804eb9e9aab8ab51c31dc5bd *inst/doc/ehr_vignette_03_DoseBuilding.pdf
+85ad6d8ae5b5ad912c0fd8b1c4ca4cb3 *inst/doc/ehr_vignette_03_DoseBuilding.pdf
 7c8b4d4f17534965f02b6ed8374fc972 *inst/doc/ehr_vignette_04_Build_PK_Oral.R
 bd4a962124274a8b2c9c7150d4697860 *inst/doc/ehr_vignette_04_Build_PK_Oral.Rmd
-d0bfe516dd5ff63c934d08776d79ea40 *inst/doc/ehr_vignette_04_Build_PK_Oral.pdf
+97dd0000d33d479418ec1b9755255a51 *inst/doc/ehr_vignette_04_Build_PK_Oral.pdf
 525fbbfc424bcccda0fbd35729e3514b *inst/examples/lam_gs_part1.csv
 495ccf655ec042e3201eb4293facad7f *inst/examples/lam_gs_part2_date.csv
 17172dc8ba6fbb23544f7e331d380d21 *inst/examples/lam_gs_part2_note.csv
