@@ -4,10 +4,13 @@
 \alias{run_Demo}
 \title{Run Demographic Data}
 \usage{
-run_Demo(demo.path, toexclude, demo.mod.list)
+run_Demo(demo.path, demo.columns = list(), toexclude, demo.mod.list)
 }
 \arguments{
 \item{demo.path}{filename of demographic file (CSV, RData, RDS) or data.frame}
+
+\item{demo.columns}{a named list that should specify columns in demo data; \sQuote{id},
+is required.}
 
 \item{toexclude}{expression that should evaluate to a logical, indicating if
 the observation should be excluded}
@@ -44,7 +47,7 @@ exclude_enroll <- function(x) x < as.Date('2019/04/01')
 # make demographic data that:
 # (1) excludes ids with weight.lbs < 150, age > 60, or enroll.date before 2019/04/01
 # (2) creates new 'highrisk' variable for subjects with weight.lbs>170 and age>55
-out <- run_Demo(demo.path = tmpfile,
+out <- run_Demo(demo.path = tmpfile, demo.columns = list(id = 'mod_id_visit'),
                toexclude = expression(
                  exclude_wt(weight.lbs)|exclude_age(age)|exclude_enroll(enroll.date)
                ),

@@ -6,23 +6,33 @@
 \usage{
 run_DrugLevel(
   conc.path,
+  conc.columns = list(),
   conc.select,
   conc.rename,
-  conc.mod.list = list(mod_id_event = expression(paste(mod_id_visit, event, sep =
-    "_"))),
+  conc.mod.list = NULL,
   samp.path = NULL,
-  samp.mod.list = list(mod_id_event = expression(paste(mod_id_visit, samp, sep = "_"))),
+  samp.columns = list(),
+  samp.mod.list = NULL,
   check.path = NULL,
   failmiss_fn = "MissingConcDate-",
   multsets_fn = "multipleSetsConc-",
   faildup_fn = "DuplicateConc-",
   drugname = NULL,
   LLOQ = NA,
-  demo.list = NULL
+  demo.list = NULL,
+  demo.columns = list()
 )
 }
 \arguments{
 \item{conc.path}{filename of concentration data (CSV, RData, RDS), or data.frame}
+
+\item{conc.columns}{a named list that should specify columns in concentration data.
+\sQuote{id} and \sQuote{conc} are required. \sQuote{idvisit} may also be specified.
+If linking with sampling data, \sQuote{samplinkid} is required. Otherwise
+\sQuote{datetime} is required. This is the date and time when blood samples were
+obtained. This can refer to a single date-time variable
+(datetime = \sQuote{date_time}) or two variables holding date and time
+separately (e.g., datetime = c(\sQuote{Date}, \sQuote{Time})).}
 
 \item{conc.select}{columns to select from concentration data}
 
@@ -31,6 +41,14 @@ run_DrugLevel(
 \item{conc.mod.list}{list of expressions, giving modifications to make}
 
 \item{samp.path}{filename of data with sampling time (CSV, RData, RDS), or data.frame}
+
+\item{samp.columns}{a named list that should specify columns in sampling data.
+\sQuote{conclinkid} and \sQuote{datetime} are required to link sampling data to
+concentration data. \sQuote{conclinkid} should match the id variable provided as
+\sQuote{samplinkid} in the \sQuote{conc.columns} argument. \sQuote{datetime} is the
+date and time when blood samples were obtained. This can refer to a single date-time
+variable (datetime = \sQuote{date_time}) or two variables holding date and time
+separately (e.g., datetime = c(\sQuote{Date}, \sQuote{Time})).}
 
 \item{samp.mod.list}{list of expressions, giving modifications to make}
 
@@ -50,6 +68,10 @@ will produce filenames without drugname included.}
 
 \item{demo.list}{demographic information; if available, concentration records
 must have a valid demo record}
+
+\item{demo.columns}{a named list that should specify columns in demographic data; \sQuote{id},
+is required. If \sQuote{idvisit} is present in the concentration data, then it is required
+here too.}
 }
 \value{
 drug-level data set
@@ -61,7 +83,6 @@ This module will load and modify drug-level data.
 See EHR Vignette for Structured Data.
 }
 \examples{
-\dontrun{
 # concentrations
 conc_data <- data.frame(mod_id = rep(1:3,each=4),
                        mod_visit = rep(c(2,1,1),each=4),
@@ -69,8 +90,6 @@ conc_data <- data.frame(mod_id = rep(1:3,each=4),
                                                       rep(c(2,1,1),each=4), sep=".")),
                        samp = rep(1:4,times=3),
                        drug_calc_conc=15*exp(-1*rep(1:4,times=3))+rnorm(12,0,0.1))
-
-saveRDS(conc_data,'conc_data.rds')
 
 # sample times
 build_date <- function(x) as.character(seq(x, length.out=4, by="1 hour"))
@@ -83,30 +102,31 @@ samp_data <- data.frame(mod_id = rep(1:3,each=4),
                        samp = rep(1:4,times=3),
                        Sample.Collection.Date.and.Time = dates)
 
-saveRDS(samp_data,'samp_data.rds')
-
 run_DrugLevel(
-  conc.path = 'conc_data.rds',
+  conc.path = conc_data,
+  conc.columns = list(
+    id = 'mod_id', idvisit = 'mod_id_visit', samplinkid = 'mod_id_event', conc = 'conc.level'
+  ),
   conc.select = c('mod_id','mod_id_visit','samp','drug_calc_conc'),
   conc.rename = c(drug_calc_conc= 'conc.level', samp='event'),
   conc.mod.list = list(mod_id_event = expression(paste(mod_id_visit, event, sep = "_"))),
-  samp.path = 'samp_data.rds',
+  samp.path = samp_data,
+  samp.columns = list(conclinkid = 'mod_id_event', datetime = 'Sample.Collection.Date.and.Time'),
   samp.mod.list = list(mod_id_event = expression(paste(mod_id_visit, samp, sep = "_"))),
-  check.path = tempdir(),
   drugname = 'drugnm',
   LLOQ = 0.05
 )
 
 # minimal example with data in required format
 conc_data <- conc_data[,c('mod_id','mod_id_visit','samp','drug_calc_conc')]
-conc_data[,'mod_id_event'] <- paste(conc_data[,'mod_id_visit'], conc_data['samp'], sep = "_")
+conc_data[,'mod_id_event'] <- paste(conc_data[,'mod_id_visit'], conc_data[,'samp'], sep = "_")
 names(conc_data)[3:4] <- c('event','conc.level')
-samp_data[,'mod_id_event'] <- paste(samp_data[,'mod_id_visit'], samp_data['samp'], sep = "_")
+samp_data[,'mod_id_event'] <- paste(samp_data[,'mod_id_visit'], samp_data[,'samp'], sep = "_")
 conc_samp_link <- match(conc_data[,'mod_id_event'], samp_data[,'mod_id_event'])
 conc_date <- samp_data[conc_samp_link, 'Sample.Collection.Date.and.Time']
 conc_data[,'date.time'] <- as.POSIXct(conc_date)
-run_DrugLevel(conc_data)
-
-}
+run_DrugLevel(conc_data, conc.columns = list(
+  id = 'mod_id', idvisit = 'mod_id_visit', datetime = 'date.time', conc = 'conc.level'
+))
 
 }

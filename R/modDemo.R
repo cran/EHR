@@ -3,6 +3,8 @@
 #' This module will load and modify demographic data.
 #'
 #' @param demo.path filename of demographic file (CSV, RData, RDS) or data.frame
+#' @param demo.columns a named list that should specify columns in demo data; \sQuote{id},
+#' is required.
 #' @param toexclude expression that should evaluate to a logical, indicating if
 #' the observation should be excluded
 #' @param demo.mod.list list of expressions, giving modifications to make
@@ -32,7 +34,7 @@
 #' # make demographic data that:
 #' # (1) excludes ids with weight.lbs < 150, age > 60, or enroll.date before 2019/04/01
 #' # (2) creates new 'highrisk' variable for subjects with weight.lbs>170 and age>55
-#' out <- run_Demo(demo.path = tmpfile,
+#' out <- run_Demo(demo.path = tmpfile, demo.columns = list(id = 'mod_id_visit'),
 #'                toexclude = expression(
 #'                  exclude_wt(weight.lbs)|exclude_age(age)|exclude_enroll(enroll.date)
 #'                ),
@@ -43,10 +45,12 @@
 #'
 #' @export
 
-run_Demo <- function(demo.path, toexclude, demo.mod.list) {
+run_Demo <- function(demo.path, demo.columns = list(), toexclude, demo.mod.list) {
   # read and transform data
   demo.in <- read(demo.path)
   demo <- dataTransformation(demo.in, modify = demo.mod.list)
+  demo.req <- list(id = NA)
+  demo.col <- validateColumns(demo, demo.columns, demo.req)
 
   # exclusion criteria
   if (missing(toexclude)) {
@@ -55,8 +59,8 @@ run_Demo <- function(demo.path, toexclude, demo.mod.list) {
     parsed.excl <- eval(toexclude, demo)
   }
 
-  excl.id <- demo[parsed.excl, 'mod_id_visit'] # the list of subject_id that should be excluded
-  cat(sprintf('The number of subjects in the demographic data, who meet the exclusion criteria: %s\n', length(excl.id)))
+  excl.id <- demo[parsed.excl, demo.col$id] # the list of subject_id that should be excluded
+  message(sprintf('The number of subjects in the demographic data, who meet the exclusion criteria: %s', length(excl.id)))
 
   list(demo = demo, exclude = excl.id)
 }

@@ -9,17 +9,23 @@ run_Build_PK_IV(
   conc.columns = list(),
   dose,
   dose.columns = list(),
+  censor = NULL,
+  censor.columns = list(),
   demo.list = NULL,
   demo.columns = list(),
   lab.list = NULL,
   lab.columns = list(),
+  dosePriorWindow = 7,
+  labPriorWindow = 7,
+  postWindow = NA,
   pk.vars = NULL,
   drugname = NULL,
   check.path = NULL,
   missdemo_fn = "-missing-demo",
   faildupbol_fn = "DuplicateBolus-",
   date.format = "\%m/\%d/\%y \%H:\%M:\%S",
-  date.tz = "America/Chicago"
+  date.tz = "America/Chicago",
+  isStrict = FALSE
 )
 }
 \arguments{
@@ -49,6 +55,15 @@ names may also be set. Any of the date-time variables can be specified as a
 single date-time variable (infuseDatetime = \sQuote{date_time}) or two variables
 holding date and time separately (e.g., infuseDatetime = c(\sQuote{Date}, \sQuote{Time})).}
 
+\item{censor}{censoring information, if available; this will censor concentration
+and dose data for dates occuring after the censor datetime variable.}
+
+\item{censor.columns}{a named list that should specify columns in censoring data; \sQuote{id},
+and \sQuote{datetime} are required. \sQuote{datetime} is the date and time when
+data should be censored. This can refer to a single date-time variable
+(datetime = \sQuote{date_time}) or two variables holding date and time separately
+(e.g., datetime = c(\sQuote{Date}, \sQuote{Time})).}
+
 \item{demo.list}{demographic information, if available; the output from 
 \code{\link{run_Demo}} or a correctly formatted data.frame}
 
@@ -66,6 +81,16 @@ the lab data was obtained, which can refer to a single date-time variable
 (datetime = \sQuote{date_time}) or two variables holding date and time separately
 (e.g., datetime = c(\sQuote{Date}, \sQuote{Time})). Any other columns present in lab
 data are treated as lab values.}
+
+\item{dosePriorWindow}{Dose data is merged with drug level data. This value sets the
+time frame window with the number of days prior to the first drug level data; defaults to 7.}
+
+\item{labPriorWindow}{Lab data is merged with drug level data. This value sets the
+time frame window with the number of days prior to the first drug level data; defaults to 7.}
+
+\item{postWindow}{Data is merged with drug level data. This postWindow can set the end time
+for the drug level data, being the number of days after the first drug level data. The
+default (NA) will use the date of the last drug level data.}
 
 \item{pk.vars}{variables to include in the returned PK data. The variable \sQuote{date}
 is a special case; when included, it maps the \sQuote{time} offset to its original date-time.
@@ -86,6 +111,9 @@ created. The default (NULL) will not produce any check files.}
 \item{date.format}{output format for \sQuote{date} variable}
 
 \item{date.tz}{output time zone for \sQuote{date} variable}
+
+\item{isStrict}{logical; when TRUE dose amount totals are strictly summed rather than repeated
+hourly until stopped}
 }
 \value{
 PK data set
@@ -106,8 +134,6 @@ is assumed until the 2nd dose record; otherwise, the first infusion is assumed t
 (i.e., add zero doses) after 60 min (i.e., equal to the gap size)  and a new infusion (the 2nd record) starts at its recorded time.
 }
 \examples{
-\dontrun{
-
 # make fake data
 set.seed(6543)
 
@@ -137,6 +163,5 @@ run_Build_PK_IV(conc = plconc,
                   bolusDatetime = 'bolus.time', bolusDose = 'bolus.dose',
                   gap = 'maxint', weight = 'weight'),
                 pk.vars = 'date')
-}
 
 }

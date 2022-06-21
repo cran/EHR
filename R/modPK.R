@@ -23,7 +23,14 @@
 #' to either infusion or bolus dosing. \sQuote{gap} and \sQuote{weight} column
 #' names may also be set. Any of the date-time variables can be specified as a
 #' single date-time variable (infuseDatetime = \sQuote{date_time}) or two variables
-#' holding date and time separately (e.g., infuseDatetime = c(\sQuote{Date}, \sQuote{Time})). 
+#' holding date and time separately (e.g., infuseDatetime = c(\sQuote{Date}, \sQuote{Time})).
+#' @param censor censoring information, if available; this will censor concentration
+#' and dose data for dates occuring after the censor datetime variable.
+#' @param censor.columns a named list that should specify columns in censoring data; \sQuote{id},
+#' and \sQuote{datetime} are required. \sQuote{datetime} is the date and time when
+#' data should be censored. This can refer to a single date-time variable
+#' (datetime = \sQuote{date_time}) or two variables holding date and time separately
+#' (e.g., datetime = c(\sQuote{Date}, \sQuote{Time})).
 #' @param demo.list demographic information, if available; the output from 
 #' \code{\link{run_Demo}} or a correctly formatted data.frame
 #' @param demo.columns a named list that should specify columns in demographic data;
@@ -38,6 +45,13 @@
 #' (datetime = \sQuote{date_time}) or two variables holding date and time separately
 #' (e.g., datetime = c(\sQuote{Date}, \sQuote{Time})). Any other columns present in lab
 #' data are treated as lab values.
+#' @param dosePriorWindow Dose data is merged with drug level data. This value sets the
+#' time frame window with the number of days prior to the first drug level data; defaults to 7.
+#' @param labPriorWindow Lab data is merged with drug level data. This value sets the
+#' time frame window with the number of days prior to the first drug level data; defaults to 7.
+#' @param postWindow Data is merged with drug level data. This postWindow can set the end time
+#' for the drug level data, being the number of days after the first drug level data. The
+#' default (NA) will use the date of the last drug level data.
 #' @param pk.vars variables to include in the returned PK data. The variable \sQuote{date}
 #' is a special case; when included, it maps the \sQuote{time} offset to its original date-time.
 #' Other named variables will be merged from the concentration data set. For example,
@@ -51,6 +65,8 @@
 #' @param faildupbol_fn filename for duplicate bolus data
 #' @param date.format output format for \sQuote{date} variable
 #' @param date.tz output time zone for \sQuote{date} variable
+#' @param isStrict logical; when TRUE dose amount totals are strictly summed rather than repeated
+#' hourly until stopped
 #'
 #' @details See EHR Vignette for Structured Data.
 #'
@@ -66,8 +82,6 @@
 #' @return PK data set
 #'
 #' @examples 
-#' \dontrun{
-#' 
 #' # make fake data
 #' set.seed(6543)
 #' 
@@ -97,23 +111,29 @@
 #'                   bolusDatetime = 'bolus.time', bolusDose = 'bolus.dose',
 #'                   gap = 'maxint', weight = 'weight'),
 #'                 pk.vars = 'date')
-#'}
 #'
 #' @export
 
 run_Build_PK_IV <- function(conc, conc.columns = list(),
                             dose, dose.columns = list(),
+                            censor = NULL,
+                            censor.columns = list(),
                             demo.list = NULL, demo.columns = list(),
                             lab.list = NULL, lab.columns = list(),
+                            dosePriorWindow = 7,
+                            labPriorWindow = 7,
+                            postWindow = NA,
                             pk.vars = NULL, drugname = NULL, check.path = NULL,
                             missdemo_fn='-missing-demo',
                             faildupbol_fn='DuplicateBolus-',
                             date.format="%m/%d/%y %H:%M:%S",
-                            date.tz="America/Chicago"
+                            date.tz="America/Chicago",
+                            isStrict = FALSE
 ) {
   conc.req <- list(id = NA, datetime = NA, druglevel = NA, idvisit = NULL)
   dose.req <- list(id = NA, date = NULL, infuseDatetime = NULL, infuseTimeExact = NULL, infuseDose = NULL,
     bolusDatetime = NULL, bolusDose = NULL, gap = NULL, weight = NULL)
+  censor.req <- list(id = NA, datetime = NA)
   lab.req <- list(id = NA, datetime = NA)
   demo.req <- list(id = NA, datetime = NULL, idvisit = NULL, weight = NULL)
 
@@ -193,7 +213,7 @@ run_Build_PK_IV <- function(conc, conc.columns = list(),
   # trim Doses - determine whether each dose is valid by comparing to concentration data
   tdArgs <- list(doseData=dose, drugLevelData=conc, drugLevelID=conc.col$id,
     drugLevelTimeVar="date.time", drugLevelVar=conc.col$druglevel,
-    otherDoseTimeVar=NULL, otherDoseVar=NULL
+    otherDoseTimeVar=NULL, otherDoseVar=NULL, lookForward=dosePriorWindow, last=postWindow
   )
   if(hasInf) {
     tdArgs$infusionDoseTimeVar <- 'infuse.time'
@@ -272,6 +292,51 @@ run_Build_PK_IV <- function(conc, conc.columns = list(),
     }
   }
 
+  # censor if necessary
+  if(!is.null(censor)) {
+    censData <- read(censor)
+    cens.col <- validateColumns(censData, censor.columns, censor.req)
+    if(length(cens.col$datetime) == 2) {
+      censDT <- paste(censData[,cens.col$datetime[1]], censData[,cens.col$datetime[2]])
+    } else {
+      censDT <- censData[,cens.col$datetime]
+    }
+    # previously, this was ['surgery_date','time_fromor']
+    censData[,'date.time'] <- pkdata::parse_dates(censDT)
+    # censor dose and concentration data at date.time for each ID
+    doseCensFlag <- logical(nrow(info1))
+    concCensFlag <- logical(nrow(conc))
+    doseIx <- tapply(seq_along(doseCensFlag), info1[,'mod_id'], I)
+    concIx <- tapply(seq_along(concCensFlag), conc[,conc.col$id], I)
+    na_dt <- as.POSIXct(NA)
+    for(i in seq(nrow(censData))) {
+      id_i <- as.character(censData[i,cens.col$id])
+      dt_i <- censData[i,'date.time']
+      d_t1 <- d_t2 <- d_t3 <- na_dt
+      if(id_i %in% names(doseIx)) {
+        if(hasInf) {
+          d_t1 <- info1[doseIx[[id_i]], 'infuse.time']
+        }
+        if(hasBol) {
+          d_t2 <- info1[doseIx[[id_i]], 'bolus.time']
+        }
+        toCens <- (!is.na(d_t1) & d_t1 > dt_i) | (!is.na(d_t2) & d_t2 > dt_i)
+        doseCensFlag[doseIx[[id_i]]] <- toCens
+      }
+      if(id_i %in% names(concIx)) {
+        d_t3 <- conc[concIx[[id_i]], 'date.time']
+        toCens <- !is.na(d_t3) & d_t3 > dt_i
+        concCensFlag[concIx[[id_i]]] <- toCens
+      }
+    }
+    if(any(doseCensFlag)) {
+      info1 <- info1[!doseCensFlag,]
+    }
+    if(any(concCensFlag)) {
+      conc <- conc[!concCensFlag,]
+    }
+  }
+
   doseById <- split(info1, info1[,'mod_id'])
   drugLevelById <- split(conc, conc[,conc.col$id])
   uids <- as.character(unique(conc[,conc.col$id]))
@@ -282,6 +347,9 @@ run_Build_PK_IV <- function(conc, conc.columns = list(),
   if(hasInf) {
     pkArgs$infusionDoseTimeVar <- 'infuse.time'
     pkArgs$infusionDoseVar <- 'infuse.dose'
+    if(isStrict) {
+      pkArgs$infusionCalcDose <- 'infuse.dose'
+    }
   }
   if(hasBol) {
     pkArgs$bolusDoseTimeVar <- 'bolus.time'
@@ -294,8 +362,8 @@ run_Build_PK_IV <- function(conc, conc.columns = list(),
   }))
 
   if(hasDemo) {
-    cat(sprintf('The dimension of the PK data before merging with demographics: %s x %s\n', nrow(pkd), ncol(pkd)))
-    cat(sprintf('The number of subjects in the PK data before merging with demographics: %s\n', length(unique(pkd$mod_id))))
+    message(sprintf('The dimension of the PK data before merging with demographics: %s x %s', nrow(pkd), ncol(pkd)))
+    message(sprintf('The number of subjects in the PK data before merging with demographics: %s', length(unique(pkd$mod_id))))
   }
 
   hasMIV <- 'idvisit' %in% names(conc.col)
@@ -343,7 +411,8 @@ run_Build_PK_IV <- function(conc, conc.columns = list(),
       lab.vars <- c(lab.vars, cln)
       if(length(cln)) {
         curlab <- lab.list[[i]][,c(lab.col$id, 'date.time', cln)]
-        tmp <- merge_by_time(tmp, curlab, maxTime=168, x.id='mod_id', y.id=lab.col$id, x.time='date', y.time='date.time')
+        labMax <- labPriorWindow * 24
+        tmp <- merge_by_time(tmp, curlab, maxTime=labMax, x.id='mod_id', y.id=lab.col$id, x.time='date', y.time='date.time')
       }
     }
     missLab <- setdiff(lab.vars, names(tmp))
@@ -380,7 +449,7 @@ run_Build_PK_IV <- function(conc, conc.columns = list(),
     }
 
     # drop mod_id based on exclusion criteria
-    cat(sprintf('The number of subjects in the demographic file, who meet the exclusion criteria: %s\n', length(demoExcl)))
+    message(sprintf('The number of subjects in the demographic file, who meet the exclusion criteria: %s', length(demoExcl)))
     tmp <- tmp[!(tmp[,'mod_id_visit'] %in% demoExcl),]
 
     #drop if mod_id is missing (i.e. no demographics for this visit)
@@ -395,8 +464,8 @@ run_Build_PK_IV <- function(conc, conc.columns = list(),
       x[,'percent'] <- round(x[,'freq'] / nrow(dd2), 2)
       rownames(x) <- NULL
       fn <- file.path(check.path, paste0(drugname, missdemo_fn, '.csv'))
-      msg <- sprintf('check NA frequency in demographics, see file %s\n', fn)
-      cat(msg)
+      msg <- sprintf('check NA frequency in demographics, see file %s', fn)
+      message(msg)
       write.csv(x, fn, quote=FALSE, row.names=FALSE)
     }
 
@@ -408,10 +477,10 @@ run_Build_PK_IV <- function(conc, conc.columns = list(),
     }
 
     missdemov <- setdiff(demo.vars, n_tmp)
-    cat(sprintf('Some demographic variables are missing and will be excluded: %s\n', paste(missdemov, collapse = '\n')))
+    message(sprintf('Some demographic variables are missing and will be excluded: %s', paste(missdemov, collapse = '\n')))
 
     demo.vars <- demo.vars[demo.vars %in% n_tmp]
-    cat(sprintf('The list of final demographic variables: %s\n', paste(demo.vars, collapse = '\n')))
+    message(sprintf('The list of final demographic variables: %s', paste(demo.vars, collapse = '\n')))
   } else {
     demo.vars <- NULL
   }
@@ -421,16 +490,18 @@ run_Build_PK_IV <- function(conc, conc.columns = list(),
       varLabel <- lab.vars[i]
       missVar <- tmp[is.na(tmp[,varLabel]), 'mod_id_visit']
       if(length(missVar) == 0) {
-        msg <- sprintf('Checked: there are no missing %s\n', varLabel)
+        msg <- sprintf('Checked: there are no missing %s', varLabel)
       } else {
-        msg <- sprintf('List of IDs missing at least 1 %s: %s\n', varLabel, paste(unique(missVar), collapse = '\n'))
+        msg <- sprintf('List of IDs missing at least 1 %s: %s', varLabel, paste(unique(missVar), collapse = '\n'))
       }
-      cat(msg)
+      message(msg)
     }
   }
 
   misspkv <- setdiff(pk.vars, names(tmp))
-  cat(sprintf('Some PK variables are missing and will be excluded: %s\n', paste(misspkv, collapse = '\n')))
+  if(length(misspkv)) {
+    message(sprintf('Some PK variables are missing and will be excluded: %s', paste(misspkv, collapse = '\n')))
+  }
 
   mainpk <- tmp[, pk.vars, drop = FALSE]
   n_subj <- length(unique(mainpk[['mod_id']]))
@@ -460,10 +531,10 @@ run_Build_PK_IV <- function(conc, conc.columns = list(),
   tmp3 <- cbind(mainpk[,pkOrder], tmp[, c(demo.vars, lab.vars), drop = FALSE])
 
   if(hasDemo) {
-    msg <- 'The dimension of the final PK data exported with the key demographics: %s x %s with %s distinct subjects (%s)\n'
+    msg <- 'The dimension of the final PK data exported with the key demographics: %s x %s with %s distinct subjects (%s)'
   } else {
-    msg <- 'The dimension of the final PK data: %s x %s with %s distinct subjects (%s)\n'
+    msg <- 'The dimension of the final PK data: %s x %s with %s distinct subjects (%s)'
   }
-  cat(sprintf(msg, nrow(tmp3), ncol(tmp3), n_subj, idvar))
+  message(sprintf(msg, nrow(tmp3), ncol(tmp3), n_subj, idvar))
   tmp3
 }
