@@ -1,4 +1,4 @@
-d7476386ec55154d7f9b66ece5544602 *DESCRIPTION
+d9be7f33e9967eb5ba0705ecc41b1e9f *DESCRIPTION
 ff7cc4c4859ab35985e317033f470400 *NAMESPACE
 3fb7783e64e57f8acdd56b37c25429df *R/EHR-package.R
 d6cebc07f95c2015b6efb40110755ab5 *R/Logistf.R
@@ -25,7 +25,7 @@ a0fb9a1b83a22a96c4749c175dc6af8c *R/modPK.R
 24be1ad5e13af9ee5d5f12e7be00b69a *R/parseMedExtractR.R
 6fb1fe11a42cb790d2e30b536ab9b216 *R/parseMedex.R
 020cc0adf2a8774e5abbdca9ea5639ca *R/parseMedxn.R
-4bf7b160c96ed672b9d22d67897266b1 *R/pkDosingInterval.R
+f636ea713cd27799be31279d8f56db70 *R/pkDosingInterval.R
 73bb0a05eff0c2566c50479c6d25e36a *R/processLastDose.R
 8807f20ea7afaf8ce57505a7654e6e5f *R/stdzDose.R
 7445fcb39c2162aa606b9b90036f6e08 *R/stdzDoseChange.R
@@ -46,7 +46,7 @@ f97f4541c393dae37d9eac322b103368 *R/utilsMod.R
 8b972265d22bb126e71995a77ef19164 *R/utilsParse.R
 ba6ab5a98ce2f80e683e6d8676cdbcca *R/utilsPk.R
 73a1565fa6a6a5f1db8da9b2494be76f *R/zeroOneTable.R
-2022fc145e03b26974cbf7777e64b090 *build/vignette.rds
+028e427429e7db7fa136af59a0a39edf *build/vignette.rds
 f848d61b8623264c8be1bd43ae42c6c2 *data/dataPheWAS.RData
 e02775f6531dd72534b5164e3776cbcc *data/dataPheWASsmall.RData
 d8f9ad518af36be1dc3426a126edd409 *data/lam_metadata.RData
@@ -56,16 +56,16 @@ d8f9ad518af36be1dc3426a126edd409 *data/lam_metadata.RData
 633b5f9c882e691ae0b405284501f45b *data/tac_mxr_parsed.RData
 af21044a1258a35d9243c7fafcce1b88 *inst/doc/ehr_vignette_01_mxr.R
 b0c4d45f41d5b7ec46802b276305ebc6 *inst/doc/ehr_vignette_01_mxr.Rmd
-0d00109466554a0c74f9be82c692dc8e *inst/doc/ehr_vignette_01_mxr.pdf
+75834e18217112cf70b545b26d24c5ef *inst/doc/ehr_vignette_01_mxr.pdf
 fb47f5ead6aacab5cb653541c51d7327 *inst/doc/ehr_vignette_02_str.R
 5ed4cb3d266621a1711ad5bc14690bea *inst/doc/ehr_vignette_02_str.Rmd
-d56c2edeb174b0e8dd3ed5a658b3bd64 *inst/doc/ehr_vignette_02_str.pdf
+f88bae957140963b4c7c4c8cae45343f *inst/doc/ehr_vignette_02_str.pdf
 b184216b9952935e3e49d91b383509c7 *inst/doc/ehr_vignette_03_DoseBuilding.R
 1aef05a884a26741621b261520fc1cab *inst/doc/ehr_vignette_03_DoseBuilding.Rmd
-4adee9a394dfe54265c54faf9c41b153 *inst/doc/ehr_vignette_03_DoseBuilding.pdf
+29a829def9fb105d38aaa1137b1067bb *inst/doc/ehr_vignette_03_DoseBuilding.pdf
 7c8b4d4f17534965f02b6ed8374fc972 *inst/doc/ehr_vignette_04_Build_PK_Oral.R
 bd4a962124274a8b2c9c7150d4697860 *inst/doc/ehr_vignette_04_Build_PK_Oral.Rmd
-39db146e63bfd6fd44dd7ed8629513a9 *inst/doc/ehr_vignette_04_Build_PK_Oral.pdf
+cd43ac55888b3a78dedc55e4b4178137 *inst/doc/ehr_vignette_04_Build_PK_Oral.pdf
 525fbbfc424bcccda0fbd35729e3514b *inst/examples/lam_gs_part1.csv
 495ccf655ec042e3201eb4293facad7f *inst/examples/lam_gs_part2_date.csv
 17172dc8ba6fbb23544f7e331d380d21 *inst/examples/lam_gs_part2_note.csv

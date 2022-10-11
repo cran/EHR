@@ -1,6 +1,6 @@
 Package: EHR
-Version: 0.4-8
-Date: 2022-06-15
+Version: 0.4-10
+Date: 2022-10-11
 Title: Electronic Health Record (EHR) Data Processing and Analysis Tool
 Maintainer: Leena Choi <leena.choi@vanderbilt.edu>
 Authors@R: 
@@ -35,12 +35,12 @@ Depends: R (>= 2.10)
 License: GPL (>= 3)
 URL: https://choileena.github.io/
 Imports: stats, utils, data.table, methods, lubridate, pkdata
-Suggests: glmnet, logistf, medExtractR, knitr, rmarkdown, ggplot2,
-        markdown
+Suggests: glmnet, logistf, medExtractR (>= 0.4.1), knitr, rmarkdown,
+        ggplot2, markdown
 NeedsCompilation: no
 RoxygenNote: 7.1.1
 VignetteBuilder: knitr
-Packaged: 2022-06-15 21:12:47 UTC; beckca
+Packaged: 2022-10-11 16:55:05 UTC; beckca
 Author: Leena Choi [aut, cre] (<https://orcid.org/0000-0002-2544-7090>),
   Cole Beck [aut] (<https://orcid.org/0000-0002-6849-6255>),
   Hannah Weeks [aut] (<https://orcid.org/0000-0002-0262-6790>),
@@ -48,4 +48,4 @@ Author: Leena Choi [aut, cre] (<https://orcid.org/0000-0002-2544-7090>),
   Nathan James [aut] (<https://orcid.org/0000-0001-7079-9151>),
   Michael Williams [aut]
 Repository: CRAN
-Date/Publication: 2022-06-21 11:20:02 UTC
+Date/Publication: 2022-10-11 21:22:32 UTC
